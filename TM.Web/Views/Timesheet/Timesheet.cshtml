@@ -1,0 +1,41 @@
+﻿@{
+    ViewBag.Title = "Timesheet";
+}
+
+<div class="container">
+    <div class="bs-docs-section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h3><i class="glyphicon glyphicon-time"></i>&nbsp;Timesheet</h3>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="bs-component">
+                    <div id="timesheetPanel">
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+        paramsView.urlReadProject = '@Url.Content("~/Timesheet/GetAllProject")';
+        paramsView.urlGetTimesheet = '@Url.Content("~/Timesheet/GetTimesheet")';
+        paramsView.urlGetAllPhase = '@Url.Content("~/Timesheet/GetAllPhase")';
+        paramsView.urlGetAllTaskType = '@Url.Content("~/Timesheet/GetAllTaskType")';
+        paramsView.urlGetMainTask = '@Url.Content("~/Timesheet/GetMainTask")';
+        paramsView.urlAddTimesheet = '@Url.Content("~/Timesheet/AddTimesheet")';
+        paramsView.urlSaveTimesheet = '@Url.Content("~/Timesheet/SaveTimesheet")';
+        paramsView.urlDeleteTimesheet = '@Url.Content("~/Timesheet/DeleteTimesheet")';
+        paramsView.fromDateText = "@ViewBag.SearchFromDate";
+        paramsView.toDateText = "@ViewBag.SearchToDate";
+        paramsView.maxDateText = "@ViewBag.MaxDate";
+    </script>
+    <script src="@Url.Content("~/app/onReady/Timesheet/Timesheet.js")"></script>
+}

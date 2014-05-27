@@ -1,0 +1,44 @@
+﻿<div id="header">
+        <div class="topr">
+            <div class="logoleft">
+                <img src="@Url.Content("~/Content/Images/logo_cwn.png")" />
+            </div>
+        </div>
+        @if(Request.IsAuthenticated){
+            <div class="logoright">
+                <table border="0">
+                    <tr class="trValignTop">
+                        <td>
+                            <table border="0">
+                                <tr>
+                                    <td>
+                                        <span style="vertical-align: top; color: Black;"><i class="glyphicon glyphicon-user"></i>:&nbsp;@Membership.GetUser().UserName</span>
+                                        <span style="vertical-align: top; color: Black;">|&nbsp;Last&nbsp;Login:&nbsp;@Membership.GetUser().LastLoginDate</span>
+                                        <span style="vertical-align: top; color: Black;">|&nbsp;Role:&nbsp;@string.Join(",", Roles.GetRolesForUser()) &nbsp;|&nbsp;</span>
+                                        @*<a href="@urlLogout">Logout</a> *@
+                                        @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { @class = "log-off", id = "logOffForm" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <a href="javascript:document.getElementById('logOffForm').submit()">Lockout</a>
+                                        }
+                                        <span style="padding-left: 5px;"></span>
+                                    </td>
+                                </tr>
+                                <tr class="trValignBaseline">
+                                    <td class="trAlignRight" style="padding-top: 16px;">
+                                        <table border="0">
+                                            <tr class="trValignBaseline">
+                                                <td style="padding-left: 16px;"></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td></td>
+                        <td style="width: 100px;"></td>
+                    </tr>
+                </table>
+        </div>
+        }
+</div>

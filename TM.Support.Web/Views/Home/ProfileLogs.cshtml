@@ -1,0 +1,57 @@
+﻿@model IList<PJ_CWN019.TM.Support.Web.Models.ProfileLogsOverviewView>
+
+@{
+    ViewBag.Title = "ProfileLogs";
+}
+
+<div class="panel panel-info">
+    <div class="panel-heading">Profile Logs Chart (@ViewBag.ForDate) </div>
+    <div class="chart">
+
+    </div>
+</div>
+
+<div class="panel panel-success">
+    <div class="panel-heading">Profile Logs (@ViewBag.ForDate) </div>
+    <table class="table table-striped table-hover table-condensed">
+        <thead>
+            <tr>
+                <th>Latest Event Date</th>
+                <th>Action</th>
+                <th>Controller</th>
+                <th>Avg. Elapsed Time (s)</th>
+                <th>Total Call</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.LatestEventDate</td>
+                    <td>@item.Action</td>
+                    <td>@item.Controller</td>
+                    <td>@item.AvgElapsedTime.ToString("0.####")</td>
+                    <td>@item.TotalCall</td>
+                    <td>
+                        <a class="btn btn-info" 
+                            href="@Url.Action("ProfileLogDetails", "Home",
+                                new {
+                                    id = item.ID,
+                                    forDate = item.LatestEventDate.Date,
+                                    actionName = item.Action,
+                                    controllerName = item.Controller,
+                                })" id="@item.ID">Details</a>
+                        
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section scripts{
+    <script>
+
+    </script>
+}

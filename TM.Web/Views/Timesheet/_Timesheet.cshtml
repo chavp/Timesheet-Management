@@ -1,0 +1,131 @@
+﻿<div class="row">
+                        @using (Ajax.BeginForm("SearchTimesheet", "Timesheet", new AjaxOptions
+                            {
+                                HttpMethod = "GET",
+                                InsertionMode = InsertionMode.Replace,
+                                UpdateTargetId = "jqGrid",
+                                OnSuccess = "showGrid()",
+                            },
+                            new
+                            {
+                                @class = "form-horizontal"
+                            }))
+                        {
+                            <fieldset>
+                                <legend>&nbsp;&nbsp;เงื่อนไขในการค้นหา / Criterion</legend>
+                                <div class="form-group">
+                                    <label class="col-lg-3 control-label">โครงการ / Project Code <span class="required">*</span> : </label>
+                                    <div class="col-lg-4">
+                                        <input type="text" autocomplete="on" name="projectCode" id="projectCode" />
+                                    </div>
+                                </div>
+                                <div class="form-group">                                    
+                                    <label for="inputDate" class="col-lg-3 control-label">ช่วงวันที่ / Date <span class="required">*</span> : </label>
+                                    <div class="col-lg-2">
+                                        <input type="text" class="form-control" id="fromDate" name="fromDate" value="@ViewBag.SearchFromDate" placeholder="dd/mm/yyyy" />
+                                    </div>
+                                    <div class="col-lg-2">
+                                        <input type="text" class="form-control" id="toDate" name="toDate" value="@ViewBag.SearchToDate" placeholder="dd/mm/yyyy" />
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-10 col-lg-offset-3">
+                                        <button type="submit" class="btn btn-primary"><i class="glyphicon glyphicon-search"></i>&nbsp;ค้นหาข้อมูล / Search</button>
+                                        <button type="reset" class="btn btn-primary"><i class="glyphicon glyphicon-trash"></i>&nbsp;ล้างข้อมูล / Clear</button>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        }
+                    </div>
+                    <div class="row" id="jqGrid">
+                        @Html.Partial("_TimesheetGrid")
+                    </div>
+
+@section scripts{
+    <script>
+        var paramFromView = {
+            Url: '@Url.Content("~/Timesheet/GetTimesheet")',
+            Width: 790,
+            Height: 464,
+            PageSize: 100,
+            GridPager: '#timesheetPager',
+            GridSortName: 'StartDate',
+            GridSortOrder: 'desc',
+            GridCaption: '<div style="height:40px;">' +
+                    '<button id="btnAdd" type="button" class="btn btn-primary" style="font-size: 14px;"><i class="glyphicon glyphicon-plus"></i>&nbsp;เพิ่มข้อมูล / Add</button>&nbsp;' +
+                    '<button id="btnDelete"  type="button" class="btn btn-primary" style="font-size: 14px;"><i class="glyphicon glyphicon-minus"></i>&nbsp;ลบข้อมูล / Delete</button>&nbsp;' +
+                    //'<button id="btnReload"  type="button" class="btn btn-primary" style="font-size: 14px;"><i class="glyphicon glyphicon-repeat"></i>&nbsp;โหลดตาราง / Reload</button>&nbsp;' +
+                  '</div>',
+            GridColNames: ['', 'ID', 'รหัสโครงการ <br /> Project Code', 'วันที่ <br /> Date', 'ช่วงโครงการ <br /> Project Phase', 'ประเภทงาน <br /> Task Type', 'งานหลัก <br /> Main Task', 'งานย่อย <br /> Sub Task', 'จำนวน ชม. ที่ใช้ <br /> Hour Used'],
+            GridColModel: [
+              { name: 'action', index: 'action', width: 30, align: 'center', search: false, sortable: false },
+              { name: 'ID', index: 'ID', hidden: true, searchoptions: { sopt: ['eq', 'cn'] } },
+              { name: 'ProjectCode', index: 'ProjectCode', width: 200, align: 'left', searchoptions: { sopt: ['eq', 'cn'] } },
+              { name: 'StartDate', index: 'StartDate', width: 100, align: 'center', sortable: true, searchoptions: { sopt: ['eq', 'cn'] }, formatter: "date", formatoptions: { newformat: "d/m/Y" } },
+              { name: 'Phase', index: 'Phase', width: 200, align: 'left', sortable: false, searchoptions: { sopt: ['eq', 'cn'] } },
+              { name: 'TaskType', index: 'TaskType', width: 200, align: 'left', sortable: false, searchoptions: { sopt: ['eq', 'cn'] } },
+              { name: 'MainTaskDesc', index: 'MainTaskDesc', width: 200, align: 'left', sortable: true, searchoptions: { sopt: ['eq', 'cn'] } },
+              { name: 'SubTaskDesc', index: 'SubTaskDesc', width: 200, align: 'left', sortable: true, searchoptions: { sopt: ['eq', 'cn'] } },
+              { name: 'HourUsed', index: 'HourUsed', width: 200, align: 'center', sortable: false, searchoptions: { sopt: ['eq', 'cn'] } }
+            ]
+        };
+
+        function showGrid() {
+            $('#timesheetGrid').jqGrid({
+                caption: paramFromView.GridCaption,
+                url: paramFromView.Url,
+                editurl: paramFromView.EditUrl,
+                rowNum: 20,
+                rowList: [10, 20, 40, 50, 100],
+                datatype: 'json',
+                mtype: 'GET',
+                viewrecords: true,
+                rownumbers: true,
+                autowidth: true,
+                colNames: paramFromView.GridColNames,
+                colModel: paramFromView.GridColModel,
+                pager: jQuery('#timesheetPager'),
+                PageSize: paramFromView.PageSize,
+                jsonReader: {
+                    root: "data",
+                    page: "page",
+                    total: "total",
+                    records: "records",
+                    repeatitems: false,
+                    userdata: "userdata"
+                }
+            }).navGrid('#timesheetPager', { view: false, del: false, add: false, edit: false, search: false, refresh: true },
+               { width: 600 }, // default settings for edit
+               {}, // default settings for add
+               {}, // delete instead that del:false we need this
+               {}, // search options
+               {} /* view parameters*/
+             );
+        };
+
+        $(function () {
+            $.datepicker.setDefaults($.datepicker.regional['th']);
+
+            var $fromDate = $("#fromDate").datepicker({
+                numberOfMonths: 2,
+                onSelect: function (selected) {
+                    $("#toDate").datepicker("option", "minDate", selected);
+                }
+            });
+            var $toDate = $("#toDate").datepicker({
+                numberOfMonths: 2,
+                onSelect: function (selected) {
+                    $("#fromDate").datepicker("option", "maxDate", selected);
+                }
+            });
+
+            $fromDate.datepicker('option', 'maxDate', $toDate.datepicker('getDate'));
+            $toDate.datepicker('option', 'minDate', $fromDate.datepicker('getDate'));
+
+            $("#projectCode").combobox();
+
+            showGrid();
+        });
+
+    </script>
+}

@@ -1,0 +1,202 @@
+﻿@{
+    ViewBag.AppRoleTitle = "";
+
+    var rolesDisplayeList = Roles.GetRolesForUser();
+
+
+    if (HttpContext.Current.IsDebuggingEnabled)
+    {
+        ViewBag.AppRoleTitle = "[ " + string.Join(" / ", rolesDisplayeList).Replace("ProjectOwner", "PM") + " ]";
+    }
+    
+    if (Request.IsAuthenticated){
+        ViewBag.PositionName = ((PJ_CWN019.TM.Web.Models.Providers.CwnMembershipUser)Membership.GetUser()).PositionName;
+    }
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+    <link rel="shortcut icon" href="@Url.Content("~/Content/Images/favicon_cwn.png")" />
+
+@*    @Styles.Render("~/Content/themes/base/css")*@
+    @Styles.Render("~/Content/bootstrap")
+    @Styles.Render("~/Content/css/extjs")
+    @Styles.Render("~/Content/css")
+
+@*    @Styles.Render("~/Content/themes/jqGrid.bootstrap/css")*@
+    @Scripts.Render("~/bundles/modernizr")
+
+    
+</head>
+
+<body>
+
+    <div id="header">
+        <div class="topr">
+            <div class="logoleft">
+                <img src="@Url.Content("~/Content/Images/logo_cwn.png")" />
+            </div>
+        </div>
+        @if(Request.IsAuthenticated){
+            <div class="logoright">
+                <table border="0">
+                    <tr>
+                        <td>
+                            <table border="0">
+                                <tr>
+                                    <td>
+                                        <span style="vertical-align: top; color: Black;"><i class="glyphicon glyphicon-user"></i>:&nbsp;@Membership.GetUser().UserName</span>
+                                        <span style="vertical-align: top; color: Black;">|<strong>&nbsp;Position</strong>:&nbsp;@ViewBag.PositionName</span>
+                                        <span style="vertical-align: top; color: Black;">|<strong>&nbsp;Last&nbsp;Login</strong>:&nbsp;@Membership.GetUser().LastLoginDate.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                                        <button class="btn btn-xs btn-info" id="cmdChangePassword" title="เปลี่ยน Password"><i class="glyphicon glyphicon-lock"></i>&nbsp;Change Password</button>
+                                        @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { @class = "log-off", id = "logOffForm" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <a href="javascript:document.getElementById('logOffForm').submit()" class="btn btn-xs btn-danger"><i class="glyphicon glyphicon-log-out"></i>&nbsp;Logout</a> @ViewBag.AppRoleTitle
+                                        }
+                                        <span style="padding-left: 5px;"></span>
+                                    </td>
+                                </tr>
+                                <tr class="trValignBaseline">
+                                    <td class="trAlignRight" style="padding-top: 16px;">
+                                        <table border="0">
+                                            <tr class="trValignBaseline">
+                                                <td style="padding-left: 16px;"></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td></td>
+                        <td style="width: auto;"></td>
+                    </tr>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="navbar navbar-default navbar-static-top" role="navigation">
+        <div class="container">
+            @if (Request.IsAuthenticated)
+            {
+                <div class="navbar-header">
+                  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                  </button>
+                </div>
+                <div class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <li><a href="@Url.Content("~/Home/Index")"><i class="glyphicon glyphicon-home"></i>&nbsp;Home</a></li>
+                        @*<li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="timesheet"><i class="glyphicon glyphicon-time"></i>&nbsp;Timesheet<span class="caret"></span></a>
+                            <ul class="dropdown-menu" aria-labelledby="timesheet">
+                                <li><a href="@Url.Content("~/Timesheet/Timesheet")"><i class="glyphicon glyphicon-time"></i>&nbsp;Timesheet</a></li>
+                            </ul>
+                        </li>*@
+                        @if (Roles.IsUserInRole("Manager") || Roles.IsUserInRole("Admin"))
+                        {
+                            <li><a href="@Url.Content("~/Project/Search")"><i class="glyphicon glyphicon-th-large"></i>&nbsp;Project</a></li>
+                        }
+
+                        @if (Roles.IsUserInRole("Member")
+                            && Roles.IsUserInRole("ProjectOwner")
+                            && !Roles.IsUserInRole("Executive")
+                            && !Roles.IsUserInRole("Manager")
+                            && !Roles.IsUserInRole("Admin"))
+                        {
+                            <li><a href="@Url.Content("~/Project/SearchReadOnly")"><i class="glyphicon glyphicon-th-large"></i>&nbsp;Project</a></li>
+                        }
+
+                        @if (Roles.IsUserInRole("Member") )
+                        {
+                            <li><a href="@Url.Content("~/Timesheet/Timesheet")"><i class="glyphicon glyphicon-time"></i>&nbsp;Timesheet</a></li>
+                        }
+                        
+                        @if (Roles.IsUserInRole("Executive") || Roles.IsUserInRole("Admin"))
+                        {
+                            <li><a href="@Url.Content("~/ProjectPortfolio/Report")"><i class="glyphicon glyphicon-file"></i>&nbsp;Report</a></li>
+                        }
+                        else
+                        {
+                            <li><a href="@Url.Content("~/Timesheet/Report")"><i class="glyphicon glyphicon-file"></i>&nbsp;Report</a></li>
+                        }
+
+                        @if (Roles.IsUserInRole("Support"))
+                        {
+                            <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-cog"></i>&nbsp;Support<span class="caret"></span></a>
+                            <ul class="dropdown-menu" aria-labelledby="timesheet">
+                                <li><a href="@Url.Content("~/Support/Employees")"><i class="glyphicon glyphicon-user"></i>&nbsp;Reset Password</a></li>
+                            </ul>
+                        </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+
+    @RenderBody()
+   
+    @Html.Partial("_Footer")
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/extjs")
+    @*@Scripts.Render("~/bundles/jqueryval")
+    @Scripts.Render("~/bundles/jqueryui")
+    @Scripts.Render("~/bundles/jqGrid.bootstrap")*@
+    @Scripts.Render("~/bundles/bootstrap")
+
+    @if (Request.IsAuthenticated)
+    {
+        <script>document.appFolderPath = '@Url.Content("~/")';</script>
+        @Scripts.Render("~/bundles/app")
+
+        <script>
+            paramsView.urlChangePassword = '@Url.Action("ChangePassword", "Account")';
+            paramsView.urlIndexPage = '@Url.Content("~/Home/Index")';
+            paramsView.urlSaveFeedback = '@Url.Content("~/Home/SaveFeedback")';
+
+            Ext.onReady(function () {
+                var $cmdChangePassword = $('#cmdChangePassword');
+                $cmdChangePassword.click(function (e) {
+                    e.preventDefault();
+                    var self = this;
+
+                    var popup = Ext.create('TM.view.UserChangePasswordWindow', {
+                        animateTarget: self,
+                        modal: true
+                    });
+                    var offset = $(self).offset();
+                    popup.showAt(offset.left - popup.width + $cmdChangePassword.width() + 10, offset.top);
+                    //popup.show();
+                });
+
+                $('#cmdFeedback').click(function (e) {
+                    e.preventDefault();
+                    var self = this;
+
+                    var popup = Ext.create('TM.view.FeedbackWindow', {
+                        animateTarget: self,
+                        modal: true
+                    });
+
+                    popup.setMessageFocus();
+                    popup.show();
+                });
+            });
+        </script>
+    }
+
+    @RenderSection("scripts", required: false)
+</body>
+</html>

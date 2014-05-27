@@ -1,0 +1,361 @@
+﻿@{
+    ViewBag.Title = "Chan Wanich Co.,Ltd. System Integration Company";
+
+    var rolesDisplayeList = Roles.GetRolesForUser();
+
+    ViewBag.AppRoleTitle = string.Join(" / ", rolesDisplayeList.ToArray()).Replace("ProjectOwner", "PM");
+
+    string timesheetAction = "";
+    string addProjectMemberAction = "";
+    string editProjectMemberAction = "";
+    string reportAction = "href=" + Url.Action("Report", "Timesheet");
+
+    var featuresForDisplay = new Dictionary<string, string>();
+
+    if (Roles.IsUserInRole("Member"))
+    {
+        timesheetAction = "href=" + Url.Action("Timesheet", "Timesheet");
+    }
+    if (Roles.IsUserInRole("Executive") || Roles.IsUserInRole("Admin"))
+    {
+        reportAction = "href=" + Url.Action("Report", "ProjectPortfolio");
+    }
+
+    if (Roles.IsUserInRole("ProjectOwner"))
+    {
+        editProjectMemberAction = "href=" + Url.Action("SearchReadOnly", "Project");
+    }
+    if (Roles.IsUserInRole("Manager") || Roles.IsUserInRole("Admin"))
+    {
+        addProjectMemberAction = "href=" + Url.Action("Search", "Project");
+        editProjectMemberAction = addProjectMemberAction;
+    }
+
+    // Display Features
+    if (Roles.IsUserInRole("Member"))
+    {
+        featuresForDisplay.Add("กรอก Timesheet", timesheetAction);
+    }
+    if (Roles.IsUserInRole("Admin"))
+    {
+        featuresForDisplay.Add("Assign Sale, Project Manager และ Resource Manager ให้กับโครงการ", addProjectMemberAction);
+    }
+    if (Roles.IsUserInRole("Manager"))
+    {
+        featuresForDisplay.Add("Assign Resource ภายในแผนกตนเอง ให้กับโครงการ", addProjectMemberAction);
+    }
+    if (Roles.IsUserInRole("ProjectOwner"))
+    {
+        featuresForDisplay.Add("บริหารจัดการ Team Member ในโครงการ", editProjectMemberAction);
+    }
+    
+    var reportsFeature = new List<string>();
+
+    // Reports Feature
+    if (Roles.IsUserInRole("Member"))
+    {
+        reportsFeature.Add("Actual Effort for Person");
+    }
+
+    if (Roles.IsUserInRole("Manager"))
+    {
+        reportsFeature.Add("Actual Effort for Department");
+    }
+
+    if (Roles.IsUserInRole("ProjectOwner"))
+    {
+        reportsFeature.Add("Actual Cost for Person");
+        reportsFeature.Add("Actual Cost for All Person");
+        reportsFeature.Add("Actual Cost for Project");
+    }
+
+    if (Roles.IsUserInRole("Admin"))
+    {
+        reportsFeature.Add("Actual Cost for Person");
+        reportsFeature.Add("Actual Effort for Person");
+        reportsFeature.Add("Actual Cost for Department");
+        reportsFeature.Add("Actual Effort for Department");
+        reportsFeature.Add("Actual Cost for Project");
+        reportsFeature.Add("Actual Cost for All Project");
+
+        if (Roles.IsUserInRole("ProjectOwner"))
+        {
+            reportsFeature.Remove("Actual Cost for All Person");
+        }
+    }
+
+    if (Roles.IsUserInRole("Executive"))
+    {
+        reportsFeature.Add("Actual Cost for Person");
+        reportsFeature.Add("Actual Cost for Department");
+        reportsFeature.Add("Actual Cost for Project");
+        reportsFeature.Add("Actual Cost for All Project");
+
+        if (Roles.IsUserInRole("ProjectOwner"))
+        {
+            reportsFeature.Remove("Actual Cost for All Person");
+        }
+    }
+    
+    reportsFeature = reportsFeature.Distinct().ToList();
+    
+    
+}
+
+<style>
+    img {
+     width:100%;
+     margin: 0 auto;
+    }
+</style>
+<div class="container">
+    <div class="bs-docs-section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h3><i class="glyphicon glyphicon-home"></i>&nbsp;Home</h3>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+@*                @if (Roles.IsUserInRole("Member"))
+                {
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Member</h3>
+                        </div>
+                        <div class="panel-body">
+                            <p>a. <a @timesheetAction>กรอก Timesheet</a></p>
+                            <p>b. <a @reportAction>เรียกดูรายงาน Actual Effort for Person</a></p>
+                        </div>
+                    </div>
+                }
+                @if (Roles.IsUserInRole("Manager"))
+                {
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Manager</h3>
+                        </div>
+                        <div class="panel-body">
+                            <p>a. <a @timesheetAction>กรอก Timesheet</a></p>
+                            <p>b. <a @addProjectMemberAction>Assign resource ภายในแผนกตนเองให้กับโครงการ</a></p>
+                            <p>c. <a @reportAction>เรียกดูรายงาน Actual Effort for Person และ Actual Effort for Department ได้</a></p>
+                        </div>
+                    </div>
+                }
+                @if (Roles.IsUserInRole("Executive"))
+                {
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Executive</h3>
+                        </div>
+                        <div class="panel-body">
+                            <p>a. <a @reportAction>เรียกดูรายงานที่เกี่ยวกับ Cost ได้ทั้งหมด ดังนี้</a></p>
+                            <p>&nbsp;&nbsp;&nbsp;i. Actual Cost for Person</p>
+                            <p>&nbsp;&nbsp;&nbsp;ii. Actual Cost for Department</p>
+                            <p>&nbsp;&nbsp;&nbsp;iii. Actual Cost for project</p>
+                            <p>&nbsp;&nbsp;&nbsp;iv. Actual Cost for All Project</p>
+                        </div>
+                    </div>
+                }
+                @if (Roles.IsUserInRole("Admin"))
+                {
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Admin</h3>
+                        </div>
+                        <div class="panel-body">
+                            <p>a. <a @timesheetAction>กรอก Timesheet</a></p>
+                            <p>b. <a @addProjectMemberAction>สามารถ Assign Sale, Project Manager และ Resource Manager ให้กับโครงการ</a></p>
+                            <p>c. <a @reportAction>เรียกดูรายงานได้ทั้งหมด ดังนี้</a> </p>
+                            <p>&nbsp;&nbsp;&nbsp;i. Actual Cost for Person</p>
+                            <p>&nbsp;&nbsp;&nbsp;ii. Actual Effort for Person</p>
+                            <p>&nbsp;&nbsp;&nbsp;iii. Actual Effort for Department</p>
+                            <p>&nbsp;&nbsp;&nbsp;iv. Actual Cost for Department</p>
+                            <p>&nbsp;&nbsp;&nbsp;v. Actual Cost for project</p>
+                            <p>&nbsp;&nbsp;&nbsp;vi. Actual Cost for All Project</p>
+                        </div>
+                    </div>
+                }
+                @if (Roles.IsUserInRole("ProjectOwner"))
+                {
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Project Manager</h3>
+                        </div>
+                        <div class="panel-body">
+                            <p>a. <a @timesheetAction>กรอก Timesheet</a></p>
+                            <p>b. <a @editProjectMemberAction>แก้ไข หน้าที่ในโครงการ (Project Role) ให้กับสมาชิกในโครงการ</a></p>
+                            <p>c. <a @reportAction>เรียกดูรายงาน  ได้ดังนี้</a></p>
+                            <p>&nbsp;&nbsp;&nbsp;i. Actual Effort for Person</p>
+                            <p>&nbsp;&nbsp;&nbsp;ii. Actual Cost for Person</p>
+                            <p>&nbsp;&nbsp;&nbsp;iii. Actual Cost for Project</p>
+                        </div>
+                    </div>
+                }*@
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">@ViewBag.AppRoleTitle</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="panel panel-info">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">Operation Features</h4>
+                            </div>
+                            <ul>
+                            @foreach (var item in featuresForDisplay)
+                            {
+                                <li><a @item.Value>@item.Key</a></li>
+                            }
+                            </ul>
+                        </div>
+
+                        <div class="panel panel-info">
+                            <div class="panel-heading">
+                                <h4 class="panel-title"><a @reportAction>Report Features</a></h4>
+                            </div>
+                            <ul>
+                            @foreach (var item in reportsFeature)
+                            {
+                                <li>@item</li>
+                            }
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+                <br />
+
+                <div>
+                    <img class="centered" id="op-flow" usemap="#op-flow-map" src="@Url.Content("~/Content/Images/Operation_Flow.jpg")" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<map id="op-flow-image-map" name="op-flow-map">
+    @if (Roles.IsUserInRole("Admin"))
+    {
+        <area @addProjectMemberAction 
+            title="เพิ่ม/กำหนด ผู้รับผิดชอบเข้าโครงการ / Project Membership" 
+            feature="project-member-admin" 
+            shape="rect" 
+            coords="115,345,275,515">
+        
+        <area @timesheetAction 
+            title="บันทึก Timesheet / Record Timesheet" 
+            feature="record-timesheet-admin" 
+            shape="rect" 
+            coords="115,545,275,580">
+        
+        <area @reportAction 
+            title="ดูรายงาน / Report" 
+            feature="report-timesheet-admin" 
+            shape="rect" 
+            coords="115,600,275,660">
+    }
+
+    @if (Roles.IsUserInRole("ProjectOwner"))
+    {
+        <area @editProjectMemberAction 
+            title="กำหนด ผู้รับผิดชอบเข้าโครงการ / Project Membership" 
+            feature="project-member-po" 
+            shape="rect" 
+            coords="320,475,480,515">
+        
+        <area @timesheetAction 
+            title="บันทึก Timesheet / Record Timesheet" 
+            feature="record-timesheet-po" 
+            shape="rect" 
+            coords="320,545,480,580">
+        
+        <area @reportAction 
+            title="ดูรายงาน / Report" 
+            feature="report-timesheet-po" 
+            shape="rect" 
+            coords="320,600,480,660">
+    }
+    
+    @if (Roles.IsUserInRole("Manager"))
+    {
+        <area @addProjectMemberAction 
+            title="เพิ่ม หรือ กำหนด ผู้รับผิดชอบเข้าโครงการ / Project Membership" 
+            feature="project-member-manager" 
+            shape="rect" 
+            coords="525,475,705,515">
+        
+        <area @timesheetAction 
+            title="บันทึก Timesheet / Record Timesheet" 
+            feature="record-timesheet-manager" 
+            shape="rect" 
+            coords="525,545,705,580">
+        
+        <area @reportAction 
+            title="ดูรายงาน / Report" 
+            feature="report-timesheet-manager" 
+            shape="rect" 
+            coords="525,600,705,660">
+    }
+    
+    @if (Roles.IsUserInRole("Member"))
+    {
+        <area @timesheetAction 
+            title="บันทึก Timesheet / Record Timesheet" 
+            feature="record-timesheet-member" 
+            shape="rect" 
+            coords="750,475,910,520">
+        
+        <area @reportAction 
+            title="ดูรายงาน / Report" 
+            feature="report-timesheet-member" 
+            shape="rect" 
+            coords="750,600,910,660">
+    }
+    
+    @if (Roles.IsUserInRole("Executive"))
+    {
+        <area @reportAction 
+            title="ดูรายงาน / Report" 
+            feature="report-timesheet-executive" 
+            shape="rect" 
+            coords="955,160,1115,215">
+    }
+@*    <area @addProjectMemberAction 
+        title="เพิ่ม/กำหนดผู้รับผิดชอบเข้าโครงการ / Project Membership" 
+        feature="project-member-2" 
+        shape="rect" 
+        coords="505,470,600,515">
+
+    <area @editProjectMemberAction 
+        title="กำหนดผู้รับผิดชอบเข้าโครงการ / Project Membership" 
+        feature="project-member-3" 
+        shape="rect" 
+        coords="340,470,433,515">
+
+    <area @reportAction 
+        title="รายงาน / Report" 
+        feature="report-timesheet" 
+        shape="rect" 
+        coords="70,590,935,635">*@
+</map>
+
+@section scripts{
+    @Scripts.Render("~/bundles/imagemapster")
+    <script>
+        $(function () {
+            $('#op-flow').mapster({
+                mapKey: "feature",
+                fillOpacity: 0.5,
+                fillColor: 'ADE9EE',
+                stroke: false,
+                singleSelect: true,
+                isSelectable: false,
+                clickNavigate: true
+            });
+
+
+        });
+    </script>
+}

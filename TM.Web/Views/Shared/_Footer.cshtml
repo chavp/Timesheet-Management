@@ -1,0 +1,20 @@
+﻿@{
+    ViewBag.Ver = "v.0.2.11";
+    ViewBag.Environment = "v.0.1.1";
+}
+
+<div id="footer">
+    <div class="bar">
+        <div class="left">
+            &copy; @DateTime.Now.Year Chan Wanich Co.,Ltd. System Integration Company 
+        </div>
+        <div class="right">
+            @if(Request.IsAuthenticated)
+            {
+                <text><button class="btn btn-xs" style="height: 17px; font-size: 10px;" id="cmdFeedback" title="feedback"><i class="glyphicon glyphicon-comment"></i></button> | </text>
+            }
+            @ViewBag.Ver | Recommended : Chrome 34+, Internet Explorer 11+, Firefox 29+
+        </div>
+    </div>
+</div>
+

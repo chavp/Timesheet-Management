@@ -1,0 +1,33 @@
+﻿@model IList<Cwn.PM.Loggers.ProfileLog>
+@{
+    ViewBag.Title = "ProfileLogDetails";
+}
+
+
+<div class="row">
+    <div class="panel panel-success">
+        <div class="panel-heading">Profile Log Details (@ViewBag.ForController/@ViewBag.ForAction)</div>
+        <ul class="pager col-md-12">
+            <li class="previous"><a href="@Url.Action("ProfileLogs", "Home",
+                    new
+                    {
+                        id = ViewBag.ID,
+                        forDate = ViewBag.ForDate,
+                    })">Back</a>
+            </li>
+        </ul>
+@foreach (var item in Model)
+{
+    <div class="col-sm-6 col-md-4">
+        <div class="thumbnail"> 
+            <ul class="list-group">
+                <li class="list-group-item"><i class="glyphicon glyphicon-time"></i> @item.EventDate <span class="badge" data-toggle="tooltip" title="Elapsed Time" data-placement="top">@item.ElapsedTime.TotalSeconds.ToString("#.####s")</span></li>
+                <li class="list-group-item"><i class="glyphicon glyphicon-user"></i> @item.UserID</li>
+                <li class="list-group-item"> <i class="glyphicon glyphicon-search"></i> <input type="text" value="@item.QueryString" data-toggle="tooltip" title="Query String" data-placement="top" class="form-control" readonly/> </li>
+                <li class="list-group-item"> <i class="glyphicon glyphicon-envelope"></i> <input type="text" value="@item.PostData" data-toggle="tooltip" title="Post Data" data-placement="top" class="form-control" class="form-control" readonly/></li>
+            </ul>
+        </div>
+    </div>
+}
+    </div>
+</div>

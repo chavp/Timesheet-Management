@@ -1,0 +1,47 @@
+﻿@{
+    ViewBag.Title = "Search Project";
+}
+
+<div class="container">
+    <div class="bs-docs-section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h3><i class="glyphicon glyphicon-th-large"></i>&nbsp;Project</h3>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="bs-component">
+                    <div id="projectPanel">
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+        paramsView.urlReadProject = '@Url.Content("~/Project/FindProject")';
+        paramsView.urlReadDepartment = '@Url.Content("~/Project/GetDepartment")';
+        paramsView.urlReadDivision = '@Url.Content("~/Project/GetDivision")';
+        paramsView.urlReadEmployee = '@Url.Content("~/Project/FindEmployee")';
+        paramsView.urlReadProjectMember = '@Url.Content("~/Project/FindProjectMember")';
+        paramsView.urlReadProjectRole = '@Url.Content("~/Project/GetProjectRole")';
+        paramsView.urlSaveProjectRole = '@Url.Content("~/Project/SaveProjectRole")';
+        paramsView.urlAssignProjectMember = '@Url.Content("~/Project/AssignProjectMember")';
+        paramsView.urlRemoveProjectMember = '@Url.Content("~/Project/RemoveProjectMember")';
+        paramsView.userDivisionID = '@ViewBag.UserDivisionID';
+        paramsView.userDepartmentID = '@ViewBag.UserDepartmentID';
+
+        @if(@Roles.IsUserInRole("Manager")){
+        <text>
+        paramsView.isManagerRole = true;
+        </text>
+        }
+    </script>
+    <script src="@Url.Content("~/app/onReady/Project/Search.js")"></script>
+}

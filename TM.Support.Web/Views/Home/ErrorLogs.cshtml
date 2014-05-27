@@ -1,0 +1,28 @@
+﻿@model IList<Cwn.PM.Loggers.ErrorLog>
+
+@{
+    ViewBag.Title = "ErrorLogs";
+}
+
+<table class="table table-striped table-hover table-condensed">
+    <caption>Error Logs (@ViewBag.ForDate)</caption>
+    <thead>
+        <tr>
+            <th>Event Date</th>
+            <th>Error Message</th>
+            <th>Stack Trace</th>
+            <th>Message</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.EventDate</td>
+                <td>@item.ErrorMessage</td>
+                <td>@item.StackTrace</td>
+                <td>@item.Message</td>
+            </tr>
+        }
+    </tbody>
+</table>

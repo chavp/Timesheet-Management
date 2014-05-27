@@ -1,0 +1,48 @@
+﻿@model PJ_CWN019.TM.Web.Models.LoginModel
+
+@{
+    ViewBag.Title = "Login";
+}
+
+<style>
+    .form-signin {
+      max-width: 330px;
+      padding: 15px;
+      margin: 0 auto;
+    }
+
+</style>
+<div id="content-main-loading">
+<div class="container">
+    @using (Html.BeginForm("Login", "Account", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post, new
+    {
+        id = "loginForm",
+        @class = "form-signin",
+        role = "form"
+    }))
+    {
+        @Html.ValidationSummary(true, "", new { @class = "required" })
+
+        <h2 class="form-signin-heading">Login</h2>
+
+        @Html.TextBoxFor(m => m.EmployeeID, new { @class = "form-control", placeholder = "รหัสพนักงาน / Employee ID", required="", autofocus="" })
+        @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "รหัสเข้าระบบ / Password", required="" })
+        
+        @Html.AntiForgeryToken()
+        <a class="btn btn-lg btn-primary btn-block" href="javascript:document.getElementById('loginForm').submit()"><i class="glyphicon glyphicon-log-in"></i>&nbsp;Login</a>
+    }
+</div>
+<div style="height:100px;"></div>
+</div>
+
+@section scripts{
+    <script>
+        $(function () {
+            $('#Password').keypress(function (e) {
+                if (e.keyCode === 13) {
+                    document.getElementById('loginForm').submit();
+                }
+            });
+        });
+    </script>
+}

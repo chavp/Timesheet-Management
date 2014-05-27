@@ -1,0 +1,89 @@
+﻿@model IList<PJ_CWN019.TM.Support.Web.Models.OverviewView>
+
+@{
+    ViewBag.Title = "Overview";
+}
+
+<h2>Overview (@ViewBag.DBLog)</h2>
+
+<div class="panel panel-success">
+    <div class="panel-heading">Profile Logs</div>
+    <div class="panel-body">
+        <div class="list-group">
+            @foreach (var item in Model.Where(m => m.Level == "Profile"))
+            {
+                <div class="list-group-item list-group-item-default">
+                    <div class="btn-group">
+                        <a class="btn btn-info" href="@Url.Action("ProfileLogs", "Home",
+                            new
+                            {
+                                id = item.ID,
+                                forDate = item.EventDate,
+                            })">
+                            @if (item.EventDate == DateTime.Today)
+                            {
+                                <text>&nbsp;&nbsp;&nbsp;&nbsp;Today&nbsp;&nbsp;&nbsp;&nbsp;</text>
+                            }
+                            else
+                            {
+                                @item.EventDate.ToString("dd/MM/yyyy")
+                            }
+                        </a>
+                        <a class="btn btn-primary" href="@Url.Action("Journeys", "Home",
+                            new
+                            {
+                                id = item.ID,
+                                forDate = item.EventDate,
+                            })">Journeys</a>
+                    </div>
+                    <span id="@item.ID" class="badge pull-right">@item.TotalRecords</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-danger">
+    <div class="panel-heading">Error Logs</div>
+    <div class="panel-body">
+        <div class="list-group">
+            @foreach (var item in Model.Where(m => m.Level == "Error"))
+            {
+                <a class="list-group-item list-group-item-default" 
+                    href="@Url.Action("ErrorLogs", "Home",
+                    new
+                    {
+                        id = item.ID,
+                        forDate = item.EventDate,
+                    })">
+                    <span id="@item.ID" class="badge pull-right">@item.TotalRecords</span>
+                    @if (item.EventDate == DateTime.Today)
+                    {
+                        <text>Today</text>
+                    }
+                    else
+                    {
+                        @item.EventDate.ToString("dd/MM/yyyy")
+                    }
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script src="~/signalr/hubs" type="text/javascript"></script>
+    <script>
+        $(function () { 
+            var log = $.connection.logHub;
+            log.client.update = function (id, level, eventDate, totalRecords) {
+                console.log(id + ", " + totalRecords);
+                $('#' + id).text(totalRecords);
+            };
+
+            $.connection.hub.start().done(function () {
+                console.log("connection-OK");
+            });
+        });
+    </script>
+}

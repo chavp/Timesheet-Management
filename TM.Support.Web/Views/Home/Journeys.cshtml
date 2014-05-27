@@ -1,0 +1,104 @@
+﻿@{
+    ViewBag.Title = "Journeys";
+}
+
+@Scripts.Render("~/bundles/d3")
+
+<h2>Journeys (@ViewBag.ForDate.ToString("dd/MM/yyyy"))</h2>
+
+<div id="timeline" class="row">
+
+</div>
+
+<style>
+    .h-bar {
+        margin: 5px;
+        background-color: green;
+        color: black;
+        height: 25px;
+    }
+
+    .v-bar {
+        margin: 1px;
+        background-color: gray;
+        color: black;
+        float: left;
+    }
+</style>
+@section scripts{
+    <script>
+        $(function () {
+            var data = [];
+
+            var colorScale = d3.scale.linear()
+                .domain([0, 100])
+                .range(["#add8e6", "blue"]); // <- B
+
+            function render(data) {
+                d3.select("#timeline")
+                    .selectAll("div.h-bar") // <-B
+                    .data(data)
+                    .enter()
+                    .append("div")
+                    .attr("class", "h-bar")
+                    .append("span");
+
+                d3.select("#timeline")
+                    .selectAll("div.h-bar") // <-C
+                    .data(data)
+                    .exit()
+                    .remove();
+
+                d3.select("#timeline")
+                    .selectAll("div.h-bar") // <-D
+                    .data(data)
+                    .attr("class", "h-bar")
+                    .style("background-color", function (d) {
+                        console.log(d.ID);
+                        return colorScale(d.ID); // <- E
+                    })
+                    .select("span")
+                    .html(function (d) {
+                        var html = "<div>";
+                        html += "<div class='label label-default'><i class='glyphicon glyphicon-time'></i>&nbsp;" + d.EventTime + "</div>";
+                        html += "<div class='label label-primary'><i class='glyphicon glyphicon-user'></i>&nbsp" + d.UserID + "</div>";
+                        var icon = "";
+                        if (d.Action === 'Login') {
+                            icon = "<i class='glyphicon glyphicon-log-in'></i>&nbsp";
+                        } else if (d.Action === 'LogOff') {
+                            icon = "<i class='glyphicon glyphicon-log-out'></i>&nbsp";
+                        } else if (d.Action === 'Index' && d.Controller == "Home") {
+                            icon = "<i class='glyphicon glyphicon-home'></i>&nbsp";
+                        } else if (d.Action === 'Timesheet' && d.Controller == "Timesheet") {
+                            icon = "<i class='glyphicon glyphicon-time'></i>&nbsp";
+                        } else if (d.Action.indexOf('Report') > -1 && d.Controller == "Timesheet") {
+                            icon = "<i class='glyphicon glyphicon-file'></i>&nbsp";
+                        } else if (d.Action == "Report" && d.Controller == "ProjectPortfolio") {
+                            icon = "<i class='glyphicon glyphicon-file'></i>&nbsp";
+                        } else if (d.Controller == "Project") {
+                            icon = "<i class='glyphicon glyphicon-th-large'></i>&nbsp";
+                        } else if (d.Controller == "Timesheet") {
+                            icon = "<i class='glyphicon glyphicon-time'></i>&nbsp";
+                        } else if (d.Controller == "ProjectPortfolio") {
+                            icon = "<i class='glyphicon glyphicon-file'></i>&nbsp";
+                        }
+                        
+                        html += "<div class='label label-info'>" + icon + " " + d.Controller + " / " + d.Action + "</div>";
+                        html += "&nbsp;<span class='badge'>" + d.ElapsedTimeSeconds.toFixed(2) + "s</span>";
+                        html += "</div>";
+                        return html;
+                    });
+            }
+
+            d3.json("@Url.Action("GetJourneys", "Home", new
+                {
+                    id = ViewBag.ID,
+                    forDate = ViewBag.ForDate,
+                })",
+                function (error, json) { // <-F
+                    data = data.concat(json);
+                    render(data);
+                });
+        });
+    </script>
+}
