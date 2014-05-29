@@ -4,7 +4,54 @@
     ViewBag.Title = "Overview";
 }
 
+<style>
+    .axis {
+        font-family: arial;
+        font-size:0.6em;
+    }
+    path {
+        fill:none;
+        stroke:black;
+        stroke-width:2px;
+    }
+    .tick {
+        fill: none;
+        stroke: black;
+    }
+    circle{
+        stroke:black;
+        stroke-width:0.5px;
+    }
+    circle.profile{
+        stroke: black;
+        stroke-width: 0.5px;
+        fill: #dff0d8;
+        opacity:0.9;
+    }
+    circle.error{
+        stroke: black;
+        stroke-width: 0.5px;
+        fill: #ebccd1;
+        opacity:0.9;
+    }
+    path.profile {
+        stroke: #dff0d8;
+        opacity:0.5;
+    }
+    path.error {
+        stroke: #ebccd1;
+        opacity:0.5;
+    }
+</style>
+
 <h2>Overview (@ViewBag.DBLog)</h2>
+
+<div class="panel panel-primary">
+    <div class="panel-heading">Profile Logs Chart</div>
+    <div class="panel-body">
+       <svg class="chart"></svg>
+    </div>
+</div>
 
 <div class="panel panel-success">
     <div class="panel-heading">Profile Logs</div>
@@ -72,6 +119,7 @@
 </div>
 
 @section scripts{
+    @Scripts.Render("~/bundles/d3")
     <script src="~/signalr/hubs" type="text/javascript"></script>
     <script>
         $(function () { 
@@ -84,6 +132,126 @@
             $.connection.hub.start().done(function () {
                 console.log("connection-OK");
             });
+
+            var profile = [],
+                error = [],
+                fromDate,
+                toDate,
+                minCount,
+                maxCount;
+            var format = d3.time.format("%d/%m/%Y");
+            fromDate = format.parse('@Model.Min(d=>d.EventDate).ToString("dd/MM/yyyy")');
+            toDate = format.parse('@Model.Max(d=>d.EventDate).ToString("dd/MM/yyyy")');
+            minCount = '@Model.Min(d=>d.TotalRecords)';
+            maxCount = '@Model.Max(d=>d.TotalRecords)';
+            @{
+                foreach (var item in Model)
+                {
+                    <text>
+                    if('@item.Level' === 'Profile'){
+                        var eventDate = format.parse('@item.EventDate.ToString("dd/MM/yyyy")');
+                        profile.push({eventDate:eventDate,count: @item.TotalRecords});
+                    }else if('@item.Level' === 'Error'){
+
+                        var eventDate = format.parse('@item.EventDate.ToString("dd/MM/yyyy")');
+                        error.push({eventDate:eventDate,count: @item.TotalRecords});
+                    }
+                    </text>
+                }
+            }
+            
+            var margin = 50,
+                width = $('.panel-body').width(),
+                height = 300;
+
+            var x_scale = d3.time.scale()
+                    .range([margin, width-margin])
+                    .domain([fromDate, toDate]);
+            var x_axis = d3.svg.axis().scale(x_scale);
+
+            var y_scale = d3.scale
+                    .linear()
+                    .range([height-margin, margin])
+                    .domain([minCount, maxCount]);
+            var y_axis = d3.svg.axis().scale(y_scale).orient("left");
+
+            var div = d3.select("body").append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0);
+
+            var display = function(data, cls){
+                var chart = d3.select('.chart')
+                                .attr('width', width)
+                                .attr('height', height)
+                               .selectAll('circle.' + cls);
+            
+                var jointChart = chart.data(data);
+
+                jointChart.enter()
+                    .append('circle')
+                    .attr('class', cls)
+                    .on("mouseover", function (d) {
+                        d3.select(d3.event.target).classed("highlight", true);
+                        div.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        div.html(format(d.eventDate) + "</br>" + d.count)
+                            .style("left", (d3.event.pageX) + "px")
+                            .style("top", (d3.event.pageY - 50) + "px");
+                    })
+                    .on("mouseout", function (d) {
+                        d3.select(d3.event.target).classed("highlight", false);
+                        div.transition()
+                            .duration(3000)
+                            .style("opacity", 0);
+                    });
+
+                var x_extent = d3.extent(data, function(d){return d.eventDate;});
+                var y_extent = d3.extent(profile, function(d){return d.count;});
+                
+                jointChart
+                    .attr("cx", function(d){return x_scale(d.eventDate);})
+                    .attr("cy", function(d){return y_scale(d.count);});
+
+                jointChart.attr("r", 5);
+
+                d3.select('.chart')
+                    .append('g')
+                        .attr("class", "x axis")
+                        .attr("transform", "translate(0," + (height-margin) + ")")
+                      .call(x_axis);
+
+                d3.select("svg")
+                    .append("g")
+                        .attr("class", "y axis")
+                        .attr("transform", "translate(" + margin + ", 0 )")
+                    .call(y_axis);
+
+                var line = d3.svg.line()
+                    .x(function(d){return x_scale(d.eventDate)})
+                    .y(function(d){return y_scale(d.count)});
+
+                d3.select("svg")
+                    .append("path")
+                    .attr("d", line(data))
+                    .attr("class", cls);
+
+                jointChart.exit().remove();
+            }
+
+            display(profile, 'profile');
+            display(error, 'error');
+
+            d3.select(".x.axis")
+                .append("text")
+                .text("Event Date")
+                    .attr("x", (width / 2) - margin)
+                    .attr("y", margin / 1.5);
+
+            d3.select(".y.axis")
+                .append("text")
+                .text("Actions (times)")
+                    .attr("transform", "rotate (-90, -43, 0) translate(-150)");
         });
     </script>
 }

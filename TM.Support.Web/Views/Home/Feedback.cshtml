@@ -1,0 +1,168 @@
+﻿@{
+    ViewBag.Title = "Feedback";
+}
+
+<h2>Feedback</h2>
+
+<div class="grid">
+
+</div>
+
+@section scripts{
+     @Scripts.Render("~/bundles/d3")
+    <script>
+        $(function () {
+
+            var _currentPage = 1,
+                _pageSize = 5;
+
+            function displayGrid(page, limit) {
+
+                var margin = { top: 20, right: 10, bottom: 200, left: 40 },
+                    width = 980 - margin.left - margin.right,
+                    height = 600 - margin.top - margin.bottom;
+
+                var columns = ['EventDate', 'UserName', 'Message', 'Rating', 'Note'];
+
+                var start = (page - 1) * limit;
+
+                var url = '@Html.Raw(@Url.Action("GetFeedback", "Home"))';
+                url += '?start=' + start + "&limit=" + limit;
+
+                d3.json(url,
+                    function (error, data) {
+                        var rootData = data.data;
+                        var total = data.total;
+                        var totalPage = Math.ceil(total / limit);
+
+                        d3.select(".grid table").remove();
+
+                        var grid = d3.select(".grid");
+
+                        grid.append('table')
+                                .attr('class', 'table table-striped table-hover table-condensed')
+                            .append('thead')
+                            .append('tr')
+                            .selectAll("th")
+                            .data(columns)
+                            .enter()
+                            .append('th').text(function (d) { return d; });
+
+                        grid.select('table')
+                            .append('tbody')
+                            .selectAll("tr")
+                            .data(rootData)
+                            .enter()
+                            .append('tr')
+                            .html(function (d) {
+                                var format = d3.time.format("%d/%m/%Y %H:%M:%S");
+                                var eventDate = format.parse(d.EventDate);
+                                var rowHtml = '<td>' + format(eventDate) + "</td>";
+                                rowHtml += '<td>' + d.UserName + "</td>";
+                                rowHtml += '<td>' + d.Message + "</td>";
+                                rowHtml += '<td>' + d.Rating + "</td>";
+                                rowHtml += '<td>' + d.Note + "</td>";
+                                return rowHtml;
+                            });
+
+                        var pageControl = '<div class="form-group form-group-sm-1">';
+                        pageControl += '<label for="page" class="col-sm-2 control-label">Page</label>';
+                        pageControl += '<div class="col-sm-2">';
+                        pageControl += '<input type="text" class="form-control" id="page" value="1"> of 10';
+                        pageControl += '</div>';
+                        pageControl += '</div>';
+
+                        //console.log(total);
+
+                        var isFirstPage = (page === 1);
+                        var isLastPage = (page === totalPage);
+
+                        var pagingActions = [
+                            {
+                                text: '<<',
+                                type: 'button',
+                                disabled: isFirstPage
+                            },
+                            {
+                                text: '<',
+                                type: 'button',
+                                disabled: isFirstPage,
+                                action: function () {
+                                    --_currentPage;
+                                    displayGrid(_currentPage, _pageSize);
+                                }
+                            },
+                            {
+                                text: 'Page',
+                                value: page,
+                                type: 'textfield'
+                            },
+                            {
+                                text: 'of',
+                                value: totalPage,
+                                type: 'displayfield'
+                            },
+                            {
+                                text: '>',
+                                type: 'button',
+                                disabled: isLastPage,
+                                action: function () {
+                                    ++_currentPage;
+                                    displayGrid(_currentPage, _pageSize);
+                                }
+                            },
+                            {
+                                text: '>>',
+                                type: 'button',
+                                disabled: isLastPage
+                            },
+                            {
+                                text: 'Refresh',
+                                type: 'button',
+                                disabled: false
+                            }
+                        ];
+
+                        // pagging
+                        grid.select('table')
+                            .append('ul').attr('class', 'pagination')
+                            .selectAll('li')
+                            .data(pagingActions)
+                            .enter()
+                            .append('li')
+                                .html(function (d) {
+                                    if (d.type === 'button') {
+
+                                        var el = $('<a></a>', {
+                                            'class': 'btn',
+                                            'disabled': d.disabled 
+                                        }).text(d.text);
+
+                                        var dtnHtml = el.get(0).outerHTML;
+                                        //console.log(dtnHtml);
+
+                                        return dtnHtml;
+                                    }
+                                    else if (d.type === 'textfield') {
+                                        var textfield = '<a><span>' + d.text + '</span>';
+                                        textfield += ':<input type="text" style="height: 20px;width: 50px;" value=' + d.value + '>';
+                                        textfield += '</a>';
+                                        return textfield;
+                                    } else if (d.type === 'displayfield') {
+                                        var textfield = '<a><span>' + d.text + '</span>';
+                                        textfield += ' <span>' + d.value + '</span>';
+                                        textfield += '</a>';
+                                        return textfield;
+                                    }
+                                    return '';
+                                }).on('click', function(d){
+                                    if (d.action) d.action();
+                                });
+                    }
+                );
+            }
+
+            displayGrid(_currentPage, _pageSize);
+        });
+    </script>
+}
