@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Cwn.PM.BusinessModels.Values;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,17 +13,61 @@ namespace Cwn.PM.BusinessModels.Entities
         public Project()
         {
             Members = new List<ProjectMember>();
-            TimeSheets = new List<Timesheet>();
+            //TimeSheets = new List<Timesheet>();
         }
 
         public virtual string Code { get; set; }
         public virtual string NameTH { get; set; }
         public virtual string NameEN { get; set; }
+
+        /// <summary>
+        /// วันที่บันทึกเข้าระบบ ตาม SharPoint
+        /// </summary>
         public virtual DateTime? StartDate { get; set; }
+
+        /// <summary>
+        /// วันที่บันทึกเข้าระบบ ตาม SharPoint
+        /// </summary>
         public virtual DateTime? EndDate { get; set; }
+
         public virtual string CustomerName { get; set; }
+        public virtual Customer Customer { get; set; }
+
+        public virtual ProjectStatus Status { get; set; }
 
         public virtual byte[] Logo { get; set; }
+
+        /// <summary>
+        /// วันที่เริ่มโครงการตามสัญญา
+        /// </summary>
+        public virtual DateTime? ContractStartDate { get; set; }
+
+        /// <summary>
+        /// วันที่สิ้นสุดโครงการตามสัญญา
+        /// </summary>
+        public virtual DateTime? ContractEndDate { get; set; }
+
+        /// <summary>
+        /// วันที่ส่งมอบงานจริง                   
+        /// </summary>
+        public virtual DateTime? DeliverDate { get; set; }
+
+        /// <summary>
+        /// วันที่เริ่มต้น ของ warranty หรือ วันที่รับมอบงาน               
+        /// </summary>
+        public virtual DateTime? WarrantyStartDate { get; set; }
+
+        /// <summary>
+        /// วันที่สิ้นสุด ของ warranty                      
+        /// </summary>
+        public virtual DateTime? WarrantyEndDate { get; set; }
+
+        /// <summary>
+        /// มูลค่าโครงการที่ประมาณการไว้                                      
+        /// </summary>
+        public virtual decimal EstimateProjectValue { get; set; }
+
+        public virtual bool IsNonProject { get; set; }
 
         public virtual IList<ProjectMember> Members { get; protected set; }
 
@@ -38,6 +83,15 @@ namespace Cwn.PM.BusinessModels.Entities
             };
             Members.Add(member);
             return member;
+        }
+
+        public virtual int Progress { get; protected set; }
+
+        public virtual ProjectProgressUpdateLog UpdateProgress(int newProgress, DateTime updateDate)
+        {
+            Progress = newProgress;
+            var newLog = new ProjectProgressUpdateLog(this, updateDate, newProgress);
+            return newLog;
         }
 
         public virtual bool ContainsMember(long employeeID)

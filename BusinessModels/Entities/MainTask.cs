@@ -8,9 +8,12 @@ namespace Cwn.PM.BusinessModels.Entities
 {
     public class MainTask : Entity
     {
-        public MainTask()
+        protected MainTask() { }
+
+        public MainTask(string desc)
+            : this()
         {
-            
+            Desc = desc;
         }
 
         public virtual string Desc { get; set; }

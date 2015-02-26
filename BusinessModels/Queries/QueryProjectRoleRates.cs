@@ -16,5 +16,7 @@ namespace Cwn.PM.BusinessModels.Queries
                    && actualStartDate <= c.EffectiveEnd.GetValueOrDefault(DateTime.MaxValue)
                    select c.Cost / 8;
         }
+
+
     }
 }

@@ -6,11 +6,10 @@ using System.Threading.Tasks;
 
 namespace Cwn.PM.BusinessModels.Entities
 {
-    public class ProjectMember
+    public class ProjectThreshold
         : Entity
     {
-        public virtual Project Project { get; set; }
-        public virtual ProjectRole ProjectRole { get; set; }
-        public virtual User User { get; set; }
+        public virtual string Name { get; set; }
+        public virtual decimal LimitRatio { get; set; }
     }
 }

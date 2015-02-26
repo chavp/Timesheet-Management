@@ -8,9 +8,24 @@ namespace Cwn.PM.BusinessModels.Entities
 {
     public class Division : Entity
     {
-        public Division()
+        protected Division()
         {
             Departments = new List<Department>();
+        }
+
+        public Division(string name)
+            : this()
+        {
+            NameTH = name;
+            NameEN = name;
+        }
+
+        public Division(string name, Organization org)
+            : this()
+        {
+            NameTH = name;
+            NameEN = name;
+            Organization = org;
         }
 
         public virtual string NameTH { get; set; }
@@ -19,5 +34,11 @@ namespace Cwn.PM.BusinessModels.Entities
         public virtual Organization Organization { get; protected set; }
 
         public virtual IList<Department> Departments { get; protected set; }
+
+        public virtual void ChangeName(string name)
+        {
+            NameTH = name;
+            NameEN = name;
+        }
     }
 }

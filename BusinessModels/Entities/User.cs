@@ -12,6 +12,7 @@ namespace Cwn.PM.BusinessModels.Entities
         public User()
         {
             //AddRoles = new List<AppRole>();
+            Status = EmployeeStatus.Work;
         }
 
         public virtual int EmployeeID { get; set; }
@@ -22,6 +23,9 @@ namespace Cwn.PM.BusinessModels.Entities
         public virtual string LastNameTH { get; set; }
         public virtual string Nickname { get; set; }
         public virtual string Email { get; set; }
+
+        public virtual DateTime? StartDate { get; set; }
+        public virtual DateTime? EndDate { get; set; }
 
         public virtual string Password { get; protected set; }
         public virtual string LastLoginIP { get; set; }
@@ -35,7 +39,14 @@ namespace Cwn.PM.BusinessModels.Entities
 
         public virtual Position Position { get; set; }
 
+        public virtual User Lead { get; set; }
+
         public virtual bool IsLockedOut { get; set; }
+
+        /// <summary>
+        /// ทำงานอยู่ (Work or Null) หรือ ลาออก (Resign)
+        /// </summary>
+        public virtual EmployeeStatus Status { get; set; }
 
         //public virtual IList<AppRole> AddRoles { get; protected set; }
 

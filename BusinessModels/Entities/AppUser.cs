@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Cwn.PM.BusinessModels.Entities
 {
-    public class ProjectMember
+    public class AppUser
         : Entity
     {
-        public virtual Project Project { get; set; }
-        public virtual ProjectRole ProjectRole { get; set; }
-        public virtual User User { get; set; }
+        public virtual string LoginName { get; set; }
+
+        public virtual User RefUser { get; set; }
     }
 }

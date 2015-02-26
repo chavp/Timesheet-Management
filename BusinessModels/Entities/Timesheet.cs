@@ -42,6 +42,6 @@ namespace Cwn.PM.BusinessModels.Entities
         public virtual decimal ActualHourUsed { get; set; }
         public virtual string Remark { get; set; }
 
-
+        public virtual bool IsOT { get; set; }
     }
 }
