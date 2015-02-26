@@ -9,7 +9,7 @@
         fieldLabel: 'ฝ่าย - แผนก / Division - Department',
         store: departmentStore,
         emptyText: 'กรุณาระบุข้อมูล',
-        padding: "0 100 0 0",
+        padding: "0 300 0 0",
         //maxLength: 30,
         hideTrigger: false,
         displayField: 'Name',
@@ -19,7 +19,8 @@
         allowBlank: false,
         disabled: true,
         editable: true,
-        forceSelection: true
+        forceSelection: true,
+        listConfig: { itemTpl: highlightMatch.createItemTpl('Name', 'Department') }
     };
 
     var projectStore = Ext.create('widget.projectStore');
@@ -30,7 +31,7 @@
         fieldLabel: 'โครงการ / Project',
         store: projectStore,
         emptyText: 'กรุณาระบุข้อมูล',
-        padding: "0 100 0 0",
+        padding: "0 0 0 0",
         //maxLength: 30,
         hideTrigger: false,
         displayField: 'Display',
@@ -40,7 +41,8 @@
         allowBlank: false,
         disabled: true,
         editable: true,
-        forceSelection: true
+        forceSelection: true,
+        listConfig: { itemTpl: highlightMatch.createItemTpl('Display', 'ProjectCode') }
     };
 
     var empStore = Ext.create('widget.employeeStore');
@@ -51,7 +53,7 @@
         fieldLabel: 'พนักงาน / Employee',
         store: empStore,
         emptyText: 'กรุณาระบุข้อมูล',
-        padding: "0 100 0 0",
+        padding: "0 300 0 0",
         //maxLength: 20,
         hideTrigger: false,
         displayField: 'Display',
@@ -61,15 +63,15 @@
         allowBlank: false,
         disabled: true,
         editable: true,
-        forceSelection: true
+        forceSelection: true,
+        listConfig: { itemTpl: highlightMatch.createItemTpl('Display', 'EmployeeID') }
     };
 
     var timesheetReportStore = Ext.create('widget.timesheetreportStore');
-    timesheetReportStore.load();
 
     var searchReportsFieldset = {
         xtype: 'fieldset',
-        title: '<h5>เงื่อนไขในการค้นหา / Criterion</h5>',
+        title: '<h5>' + TextLabel.searchCriterionLabel + '</h5>',
         border: false,
         defaultType: 'field',
         defaults: {
@@ -86,7 +88,7 @@
         xtype: 'combo',
         id: 'Name',
         name: 'Name',
-        padding: "0 180 0 0",
+        padding: "0 300 0 0",
         store: timesheetReportStore,
         fieldLabel: 'ชื่อรายงาน / Report Name',
         displayField: 'Name',
@@ -131,6 +133,9 @@
                     cmpEmployeeID.setDisabled(false);
                 } else if (newValue === 6) { // Actual Effort for Department
                     cmpDepartment.setDisabled(false);
+                }
+                else if (newValue === 7) { // Timesheet Data Recording
+                    
                 }
             }
         }
@@ -186,7 +191,7 @@
 
     searchReportsItems.push({
         xtype: 'fieldcontainer',
-        fieldLabel: 'ช่วงวันที่ / Date (วันแรก - วันสุดท้าย ของเดือนปัจจุบัน)',
+        fieldLabel: 'ช่วงวันที่ / Date (วันแรก - วันนี้ ของเดือนปัจจุบัน)',
         name: 'dateBetween',
         layout: 'hbox',
         defaults: {
@@ -196,22 +201,25 @@
             xtype: 'datefield',
             id: 'fromStartTimesheet',
             name: 'fromStartTimesheet',
-            //anchor: '100%',
+            anchor: '100%',
             fieldLabel: '',
-            flex: 1,
+            width: 100,
             format: 'd/m/Y',
             editable: false,
             vtype: 'daterange',
             endDateField: 'toStartTimesheet'
         }, {
+            xtype: 'displayfield',
+            margin: '0 5 0 5',
+            value: '-'
+        }, {
             xtype: 'datefield',
             id: 'toStartTimesheet',
             name: 'toStartTimesheet',
-            //anchor: '100%',
+            anchor: '100%',
             fieldLabel: '',
-            flex: 1,
+            width: 100,
             format: 'd/m/Y',
-            padding: "0 100 0 0",
             editable: false,
             vtype: 'daterange',
             startDateField: 'fromStartTimesheet'
@@ -224,7 +232,7 @@
             id: 'CheckAllTime',
             name: 'CheckAllTime',
             fieldLabel: '',
-            padding: "0 100 0 0",
+            padding: "0 0 0 5",
             labelWidth: 0,
             labelAlign: 'right',
             disabled: true,
@@ -247,6 +255,9 @@
     var setDefault = function () {
         Ext.getCmp('fromStartTimesheet').setValue(paramsView.firstDayOfMonth);
         Ext.getCmp('toStartTimesheet').setValue(paramsView.lastDayOfMonth);
+
+        Ext.getCmp('fromStartTimesheet').setMinValue(paramsView.minDateText);
+        Ext.getCmp('toStartTimesheet').setMaxValue(paramsView.maxDateText);
     }
 
     searchReportsItems.push(cmbDepartment);
@@ -260,8 +271,8 @@
             align: 'stretch'
         },
         renderTo: 'searchReportsPanel',
-        //height: 230,
-        width: 1150,
+        //height: WindowHeight.height,
+        width: 'auto',
         border: 1,
         defaults: {
             frame: false,
@@ -275,7 +286,8 @@
                     title: '',
                     region: 'center',
                     //height: 160,
-                    bodyPadding: "0 150 0 150",
+                    renderTo: 'searchReportsPanel',
+                    bodyPadding: "0 20 0 20",
                     collapsible: false,
                     items: [searchReportsFieldset],
                     buttonAlign: 'center',
@@ -297,7 +309,7 @@
                                             }
 
                                             var values = form.getValues();
-                                            console.log(values);
+                                            //console.log(values);
 
                                             var timesheetreport = Ext.create('widget.timesheetreport', {
                                                 Name: values.Name,
@@ -316,6 +328,7 @@
                                             Ext.Ajax.request({
                                                 url: paramsView.urlExportReport,
                                                 jsonData: timesheetreport.data,
+                                                timeout: 120000,
                                                 failure: function (xhr) {
                                                     //alert('failed  !');
                                                     Ext.MessageBox.hide();
@@ -366,7 +379,20 @@
                                     }
                     ]
                 }
-        ]
+        ],
+        listeners: {
+            beforerender: function (pln, eOpts) {
+                timesheetReportStore.load();
+            }
+        },
+        constructor: function (config) {
+            this.initConfig(config);
+            return this;
+        }
+    });
+
+    timesheetReportStore.load({
+        url: paramsView.urlGetReport
     });
 
     setDefault();

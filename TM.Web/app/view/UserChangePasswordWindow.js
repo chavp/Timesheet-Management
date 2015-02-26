@@ -16,6 +16,7 @@ Ext.define('TM.view.UserChangePasswordWindow', {
     resizable: false,
     closable: false,
     width: 480,
+    constrain: true,
     config: {
     },
     initComponent: function () {

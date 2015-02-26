@@ -4,12 +4,18 @@
     fields: [
         { name: 'ID' },
         { name: 'EmployeeID' },
+        { name: 'Title' },
         { name: 'FullName' },
         { name: 'Position' },
         { name: 'Division' },
         { name: 'Department' },
-        { name: 'EMail' },
+        { name: 'Email' },
         { name: 'OldPassword' },
-        { name: 'NewPassword' }
+        { name: 'NewPassword' },
+        { name: 'NameTH' },
+        { name: 'LastTH' },
+        { name: 'NameEN' },
+        { name: 'LastEN' },
+        { name: 'AppRole' }
     ]
 });

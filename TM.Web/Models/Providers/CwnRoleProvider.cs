@@ -10,6 +10,7 @@ namespace PJ_CWN019.TM.Web.Models.Providers
     using NHibernate;
     using NHibernate.Linq;
     using PJ_CWN019.TM.Web;
+    using WebMatrix.WebData;
 
     public class CwnRoleProvider : RoleProvider
     {
@@ -60,26 +61,57 @@ namespace PJ_CWN019.TM.Web.Models.Providers
         {
             //throw new NotImplementedException();
             var roles = new List<string>();
+
             using (var session = _sessionFactory.OpenSession())
             {
+                var owner = (from u in session.Query<User>()
+                              where u.EmployeeID.ToString() == username
+                              select u).SingleOrDefault();
+
+                if (owner == null)
+                {
+                    return roles.ToArray();
+                }
+
                 roles = (from r in session.Query<AppRole>()
                                 from u in session.Query<User>() 
                                 where r.Users.Contains(u)
-                                && u.EmployeeID.ToString() == username
+                                && u == owner
                                 select r.Name).ToList();
 
                 // is ProjectOwner
                 //check PM Role
                 var memberPMProjects = (from p in session.Query<Project>()
                                         join m in session.Query<ProjectMember>() on p equals m.Project
-                                        where m.User.EmployeeID.ToString() == username
+                                        where m.User == owner
                                         && m.ProjectRole.IsOwner
                                         select new { Project = p, Member = m });
                 if (memberPMProjects.Count() > 0)
                 {
-                    roles.Add("ProjectOwner");
+                    roles.Add(ConstAppRoles.ProjectOwner);
+                }
+
+                // is Top Manager
+                var haveChilds = ((from u in session.Query<User>()
+                                   where u.Lead == owner 
+                                   select u).Count() > 0);
+
+                if (haveChilds)
+                {
+                    if (owner.Lead == null)
+                    {
+                        roles.Add(ConstAppRoles.TopManager);
+                    }
+                    else
+                    {
+                        roles.Add(ConstAppRoles.MiddleManager);
+                    }
                 }
             }
+
+            //roles.Add("Admin");
+            //roles.Add("Executive");
+
             return roles.ToArray();
         }
 
@@ -90,7 +122,8 @@ namespace PJ_CWN019.TM.Web.Models.Providers
 
         public override bool IsUserInRole(string username, string roleName)
         {
-            throw new NotImplementedException();
+            return GetRolesForUser(username).Contains(roleName);
+            //throw new NotImplementedException();
         }
 
         public override void RemoveUsersFromRoles(string[] usernames, string[] roleNames)

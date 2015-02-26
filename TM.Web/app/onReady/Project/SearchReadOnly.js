@@ -13,10 +13,11 @@ function addSelectAllDepartmentModel(store) {
 }
 
 Ext.onReady(function () {
-    var projectStore = Ext.create('widget.projectStore');
-    projectStore.load();
+
+    var projectStore = Ext.create('widget.projectStore', {
+        pageSize: 10
+    });
     var divisionStore = Ext.create('widget.divisionStore');
-    divisionStore.load();
 
     var departmentStore = Ext.create('widget.departmentStore');
     //add All department
@@ -95,7 +96,7 @@ Ext.onReady(function () {
     Ext.create('Ext.panel.Panel', {
         layout: 'border',
         renderTo: 'projectPanel',
-        width: 1150,
+        width: 'auto',
         height: 540,
         border: 1,
         defaults: {
@@ -108,7 +109,7 @@ Ext.onReady(function () {
                 id: 'searchProjectForm',
                 title: '',
                 region: 'north',
-                bodyPadding: "0 150 0 150",
+                bodyPadding: "0 20 0 20",
                 collapsible: false,
                 items: [searchProjectFieldset],
                 buttonAlign: 'center',
@@ -145,32 +146,103 @@ Ext.onReady(function () {
                         locked: true
                     }, {
                         xtype: 'actioncolumn',
-                        //align: 'center',
-                        width: 30,
+                        sortable: false,
+                        menuDisabled: true,
+                        width: 60,
                         items: [{
                             // Use a URL in the icon config
                             xtype: 'button',
                             tooltip: 'แก้ไขผู้รับผิดชอบ / Edit Member',
                             iconCls: 'edit-project-memebr-icon',
                             handler: function (grid, rowIndex, colIndex, item, event, record, row) {
-                                //var record = grid.getStore().getAt(rowIndex);
                                 grid.getSelectionModel().select(record);
-
                                 var projectForm = Ext.create('widget.editProjectMemberWindow', {
+                                    iconCls: 'edit-project-memebr-icon',
                                     projectData: record,
                                     animateTarget: row,
                                     modal: true
                                 });
                                 projectForm.show();
                             }
-                        }]
+                        },
+                        {
+                            xtype: 'button',
+                            getTip: function (v, meta, rec) {
+                                return 'แก้ไขโครงการ / Edit Project';
+                            },
+                            getClass: function (v, meta, rec) {
+                                return 'edit-project-icon';
+                            },
+                            isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                if (paramsView.isAdminRole) return false;
+                                var isOwner = record.get('IsOwner');
+                                if (isOwner) return false;
+                                if (paramsView.isManagerRole) return true;
+                                return false;
+                            },
+                            handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                grid.getSelectionModel().select(record);
+                                var editForm = Ext.create('widget.projectSaveWindow', {
+                                    iconCls: 'edit-project-icon',
+                                    editData: record,
+                                    animateTarget: row,
+                                    projectStore: projectStore,
+                                    modal: true
+                                });
+
+                                editForm.setValues(record);
+                                editForm.show();
+                            }
+                        }
+                        //, {
+                        //    xtype: 'button',
+                        //    tooltip: 'Cumulative Flow Chart',
+                        //    iconCls: 'chart-line-project-memebr-icon',
+                        //    handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                        //        grid.getSelectionModel().select(record);
+                        //        var chartForm = Ext.create('widget.chartWindow', {
+                        //            title: 'Cumulative Effort Flow Chart',
+                        //            iconCls: 'chart-line-project-memebr-icon',
+                        //            projectData: record,
+                        //            animateTarget: row,
+                        //            modal: true
+                        //        });
+                        //        chartForm.show();
+                        //    }
+                        //}
+                        ]
                     },
-                    { text: 'ID', dataIndex: 'ID', flex: 1, hidden: true },
-                    { text: 'รหัสโครงการ<br/>Project Code', dataIndex: 'Code', flex: 1 },
-                    { text: 'ชื่อโครงการ<br/>Project Name', dataIndex: 'Name', flex: 4 },
-                    { text: 'วันที่เริ่มโครงการ<br/>Start Date', dataIndex: 'StartDate', flex: 1, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
-                    { text: 'วันที่ปิดโครงการ<br/>End Date', dataIndex: 'EndDate', flex: 1, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
-                    { text: 'สมาชิกในโครงการ<br/>Project Members', dataIndex: 'Members', flex: 1 }
+                    { text: 'ID', dataIndex: 'ID', flex: 1, sortable: false, hidden: true },
+                    { text: 'รหัสโครงการ<br/>Project Code', dataIndex: 'Code', sortable: true, flex: 1 },
+                    {
+                        text: 'ชื่อโครงการ<br/>Project Name', dataIndex: 'Name', sortable: true, flex: 3,
+                        renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                            // Sample value: msimms & Co. "like" putting <code> tags around your code
+
+                            value = Ext.String.htmlEncode(value);
+
+                            // "double-encode" before adding it as a data-qtip attribute
+                            metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+
+                            return value;
+                        }
+                    },
+                    { text: 'วันที่เริ่มโครงการ<br/>Start Date', dataIndex: 'StartDate', sortable: true, flex: 1, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
+                    { text: 'วันที่ปิดโครงการ<br/>End Date', dataIndex: 'EndDate', flex: 1, sortable: true, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
+                    { text: 'สมาชิกในโครงการ<br/>Project Members', dataIndex: 'Members', sortable: true, flex: 1, align: 'center' },
+                    {
+                        text: 'สถานะโครงการ<br/>Project Status', dataIndex: 'StatusDisplay', sortable: true, flex: 1, align: 'center',
+                        renderer: function (value, metadata, record, rowIndex, colIndex, store) {
+                            var status = record.get('StatusDisplay');
+
+                            if (status === 'Open') {
+                                metadata.style = "background-color:#99FF99;";
+                            } else {
+                                metadata.style = "background-color:#FFCCCC;";
+                            }
+                            return value;
+                        }
+                    }
                 ],
                 bbar: Ext.create('Ext.PagingToolbar', {
                     store: projectStore,
@@ -181,4 +253,8 @@ Ext.onReady(function () {
             }
         ]
     });
+
+    projectStore.load({ url: paramsView.urlReadProject });
+    divisionStore.load({ url: paramsView.urlReadDivision });
+
 });

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using System.Web.SessionState;
 
 namespace PJ_CWN019.TM.Web.Controllers
 {
@@ -17,15 +18,21 @@ namespace PJ_CWN019.TM.Web.Controllers
     using PJ_CWN019.TM.Web.Filters;
     using System.Web.Security;
     using System.IO;
+    using PJ_CWN019.TM.Web.Extensions;
+    using PJ_CWN019.TM.Web.Models.Services;
+using PJ_CWN019.TM.Web.Models.Providers;
 
     [ErrorLog]
     [ProfileLog]
-    [Authorize(Roles = "Executive, Admin")]
+    [Authorize(Roles = ConstAppRoles.Executive + ", " + ConstAppRoles.Admin)]
     [FourceToChangeAttribute]
+    [SessionState(SessionStateBehavior.Disabled)]
+    [ValidateAntiForgeryTokenOnAllPosts]
     public class ProjectPortfolioController : Controller
     {
         string dateFormat = "dd/MM/yyyy";
         ISessionFactory _sessionFactory = null;
+        bool _addChartExportReport = false;
         public ProjectPortfolioController(ISessionFactory sessionFactory)
         {
             _sessionFactory = sessionFactory;
@@ -41,12 +48,16 @@ namespace PJ_CWN019.TM.Web.Controllers
             var firstDayOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
             var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
 
+            ViewBag.MinDate = DateTime.Now.AddYears(-1).ToString(dateFormat, new CultureInfo("en-US"));
+            ViewBag.MaxDate = DateTime.Now.ToString(dateFormat, new CultureInfo("en-US"));
+
             ViewBag.FirstDayOfMonth = firstDayOfMonth.ToString(dateFormat, new CultureInfo("en-US"));
-            ViewBag.LastDayOfMonth = lastDayOfMonth.ToString(dateFormat, new CultureInfo("en-US"));
+            ViewBag.LastDayOfMonth = ViewBag.MaxDate;
 
             return View();
         }
 
+        [OutputCache(Duration = 60 * 60 * 24)]
         public JsonResult GetReport()
         {
             var viewList = new List<TimesheetReportView>();
@@ -57,7 +68,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                 Name = "Actual Cost for Person",
             });
 
-            if (Roles.IsUserInRole("Admin"))
+            if (Roles.IsUserInRole(ConstAppRoles.Admin))
             {
                 viewList.Add(new TimesheetReportView
                 {
@@ -92,6 +103,22 @@ namespace PJ_CWN019.TM.Web.Controllers
                 ID = 4,
                 Name = "Actual Cost for All Project",
             });
+
+            viewList.Add(new TimesheetReportView
+            {
+                ID = 7,
+                Name = "Timesheet Data Recording",
+            });
+
+            if (Roles.IsUserInRole(ConstAppRoles.TopManager)
+                || Roles.IsUserInRole(ConstAppRoles.MiddleManager))
+            {
+                viewList.Add(new TimesheetReportView
+                {
+                    ID = 8,
+                    Name = "Actual Effort for Manager",
+                });
+            }
 
             var result = new
             {
@@ -148,9 +175,10 @@ namespace PJ_CWN019.TM.Web.Controllers
             using (var session = _sessionFactory.OpenSession())
             {
                 var userQuery = (from u in session.Query<User>()
-                                 where u.EmployeeID.ToString().Contains(query)
+                                 where u.Status == EmployeeStatus.Work
+                                 && (u.EmployeeID.ToString().Contains(query)
                                  || u.FirstNameTH.Contains(query)
-                                 || u.LastNameTH.Contains(query)
+                                 || u.LastNameTH.Contains(query))
                                  select u);
 
                 userQuery = userQuery.OrderBy(u => u.EmployeeID);
@@ -195,8 +223,6 @@ namespace PJ_CWN019.TM.Web.Controllers
                                      DivisionID = div.ID,
                                      Name = div.NameTH + " - " + dept.NameTH,
                                  });
-
-                //deptQuery = deptQuery.OrderBy(u => u.Name);
 
                 count = deptQuery.Count();
                 foreach (var dept in deptQuery.Skip(start).Take(limit))
@@ -244,9 +270,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                         using (var session = _sessionFactory.OpenSession())
                         {
                             //get User
-                            var empTarget = (from u in session.Query<User>()
-                                             where u.EmployeeID.ToString() == timesheetReportView.EmployeeID
-                                             select u).Single();
+                            var empTarget = session.Query<User>().QueryByEmployeeID(timesheetReportView.EmployeeID).Single();
 
                             var memberProjects = (from p in session.Query<Project>()
                                                   join m in session.Query<ProjectMember>() on p equals m.Project
@@ -286,7 +310,21 @@ namespace PJ_CWN019.TM.Web.Controllers
                                     CurrentProjectRole = pro.Member.ProjectRole.NameTH
                                 };
                                 actualCostForPerson.DetailHeaders.Add(header1);
-                                foreach (var item in pro.Project.TimeSheets.Where(m => m.User == empTarget))
+
+                                //fill only memebr timesheet
+                                var timesheets = from t in session.Query<Timesheet>()
+                                                 where t.Project == pro.Project
+                                                 && t.User == empTarget
+                                                 && fromDate <= t.ActualStartDate 
+                                                 && t.ActualStartDate <= toDate
+                                                 select t;
+
+                                //var timesheets = from t in pro.Project.TimeSheets
+                                //                where t.User == empTarget
+                                //                && fromDate <= t.ActualStartDate && t.ActualStartDate <= toDate
+                                //                select t;
+
+                                foreach (var item in timesheets)
                                 {
                                     ++index;
                                     var roleCost = item.ProjectRole.ProjectRoleRates
@@ -294,23 +332,9 @@ namespace PJ_CWN019.TM.Web.Controllers
                                         .FirstOrDefault();
 
                                     var totalCost = item.ActualHourUsed * roleCost;
+                                    var detail = item.ToViewModel(index, pro.Project, totalCost, roleCost);
 
-                                    header1.Details.Add(new TimesheetDetail
-                                    {
-                                        Index = index,
-                                        Date = item.ActualStartDate.GetValueOrDefault(),
-                                        ProjectCode = pro.Project.Code,
-                                        ProjectRole = item.ProjectRole.NameTH,
-                                        ProjectRoleOrder = item.ProjectRole.Order,
-                                        Phase = item.Phase.NameTH,
-                                        PhaseOrder = item.Phase.Order,
-                                        TaskType = item.TaskType.NameTH,
-                                        MainTask = item.MainTask,
-                                        SubTask = item.SubTask,
-                                        Hours = item.ActualHourUsed,
-                                        Cost = totalCost,
-                                        RoleCost = roleCost,
-                                    });
+                                    header1.Details.Add(detail);
                                 }
                             }
 
@@ -370,10 +394,13 @@ namespace PJ_CWN019.TM.Web.Controllers
                             Members = pro.Members.Count(),
                         };
                         report.DetailHeaders.Add(header1);
-                        var timesheetOnlyDepartment = pro.TimeSheets
-                            .Where(t => fromDate <= t.ActualStartDate
-                                && t.ActualStartDate <= toDate
-                                && t.User.Department == dept);
+
+                        var timesheetOnlyDepartment = from tm in session.Query<Timesheet>()
+                                                          where tm.Project == pro
+                                                          &&  fromDate <= tm.ActualStartDate
+                                                          && tm.ActualStartDate <= toDate
+                                                          && tm.User.Department == dept
+                                                          select tm;
 
                         foreach (var timesheet in timesheetOnlyDepartment)
                         {
@@ -383,25 +410,8 @@ namespace PJ_CWN019.TM.Web.Controllers
                                 .FirstOrDefault();
 
                             var totalCost = timesheet.ActualHourUsed * cost;
-
-                            header1.Details.Add(new TimesheetDetail
-                            {
-                                Index = index,
-                                Date = timesheet.ActualStartDate.GetValueOrDefault(),
-                                EmployeeID = timesheet.User.EmployeeID,
-                                FullName = timesheet.User.FullName,
-                                ProjectCode = pro.Code,
-                                ProjectRole = timesheet.ProjectRole.NameTH,
-                                ProjectRoleOrder = timesheet.ProjectRole.Order,
-                                Phase = timesheet.Phase.NameTH,
-                                PhaseOrder = timesheet.Phase.Order,
-                                TaskType = timesheet.TaskType.NameTH,
-                                MainTask = timesheet.MainTask,
-                                SubTask = timesheet.SubTask,
-                                Hours = timesheet.ActualHourUsed,
-                                Cost = totalCost,
-                                RoleCost = cost,
-                            });
+                            var detail = timesheet.ToViewModel(index, pro, totalCost, cost);
+                            header1.Details.Add(detail);
                         }
                     }
 
@@ -409,7 +419,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                     filename = string.Format(filename, dept.NameTH, DateTime.Now.ToString("yyyyMMdd"));
                     filename = filename.Replace("#", "NO");
                     fullFilepath = fullFilepath + filename;
-                    report.WriteExcel(fullFilepath);
+                    report.WriteExcel(fullFilepath, _addChartExportReport);
                 }
                 #endregion
             }
@@ -437,6 +447,8 @@ namespace PJ_CWN019.TM.Web.Controllers
                         {
                             FromDate = fromDate,
                             ToDate = toDate,
+                            ProjectStartDate = project.StartDate.ToPresentDateString(),
+                            ProjectEndDate = project.EndDate.ToPresentDateString(),
                         };
 
                         actualCostForProjects.ActualCostForProjectList.Add(actualCostForProject);
@@ -450,39 +462,29 @@ namespace PJ_CWN019.TM.Web.Controllers
                         actualCostForProject.ProjectCode = project.Code;
                         actualCostForProject.ProjectName = project.NameTH;
                         var index = 0;
-                        foreach (var timesheet in project.TimeSheets.Where(t =>
-                            fromDate <= t.ActualStartDate && t.ActualStartDate <= toDate))
+
+                        var timesheets = (from t in session.Query<Timesheet>()
+                                         where t.Project == project
+                                         && fromDate <= t.ActualStartDate
+                                         && t.ActualStartDate <= toDate
+                                         select t).ToList();
+
+                        foreach (var timesheet in timesheets)
                         {
                             ++index;
                             var cost = timesheet.ProjectRole.ProjectRoleRates
                                 .GetEffectiveRatePerHours(timesheet.ActualStartDate)
                                 .FirstOrDefault();
                             var totalCost = timesheet.ActualHourUsed * cost;
-                            header1.Details.Add(new TimesheetDetail
-                            {
-                                Index = index,
-                                Date = timesheet.ActualStartDate.GetValueOrDefault(),
-                                EmployeeID = timesheet.User.EmployeeID,
-                                FullName = timesheet.User.FullName,
-                                ProjectCode = project.Code,
-                                ProjectRole = timesheet.ProjectRole.NameTH,
-                                ProjectRoleOrder = timesheet.ProjectRole.Order,
-                                Phase = timesheet.Phase.NameTH,
-                                PhaseOrder = timesheet.Phase.Order,
-                                TaskType = timesheet.TaskType.NameTH,
-                                MainTask = timesheet.MainTask,
-                                SubTask = timesheet.SubTask,
-                                Hours = timesheet.ActualHourUsed,
-                                Cost = totalCost,
-                                RoleCost = cost,
-                            });
+                            var detail = timesheet.ToViewModel(index, project, totalCost, cost);
+                            header1.Details.Add(detail);
                         }
                     }
 
                     filename = "actual_cost_for_project_{0}_{1}.xlsx";
                     filename = string.Format(filename, timesheetReportView.ProjectCode, DateTime.Now.ToString("yyyyMMdd"));
                     fullFilepath = fullFilepath + filename;
-                    actualCostForProjects.WriteExcel(fullFilepath);
+                    actualCostForProjects.WriteExcel(fullFilepath, _addChartExportReport);
                 }
                 #endregion
             }
@@ -522,11 +524,17 @@ namespace PJ_CWN019.TM.Web.Controllers
                             var index = 0;
                             foreach (var project in allProjects)
                             {
-                                var totalTimeSheets = project.TimeSheets
-                                    .Where(t => fromDate <= t.ActualStartDate
-                                        && t.ActualStartDate <= toDate).Count();
+                                var totalTimeSheets = (from tm in session.Query<Timesheet>()
+                                                      where tm.Project == project
+                                                      && fromDate <= tm.ActualStartDate
+                                                      && tm.ActualStartDate <= toDate
+                                                       select tm);
 
-                                if (totalTimeSheets > 0)
+                                //var totalTimeSheets = project.TimeSheets
+                                //    .Where(t => fromDate <= t.ActualStartDate
+                                //        && t.ActualStartDate <= toDate).Count();
+
+                                if (totalTimeSheets.Count() > 0)
                                 {
                                     var membersCount = project.Members.Count();
 
@@ -542,12 +550,10 @@ namespace PJ_CWN019.TM.Web.Controllers
                                     ++index;
 
                                     var totalDay = project.EndDate - project.StartDate;
-                                    var hours = project.TimeSheets.Sum(t => t.ActualHourUsed);
+                                    //var hours = project.TimeSheets.Sum(t => t.ActualHourUsed);
                                     decimal totalCost = 0;
 
-                                    foreach (var timesheet in project.TimeSheets
-                                        .Where(t => fromDate <= t.ActualStartDate
-                                            && t.ActualStartDate <= toDate))
+                                    foreach (var timesheet in totalTimeSheets)
                                     {
                                         var cost = timesheet.ProjectRole.ProjectRoleRates
                                             .GetEffectiveRatePerHours(timesheet.ActualStartDate)
@@ -555,24 +561,8 @@ namespace PJ_CWN019.TM.Web.Controllers
 
                                         totalCost = timesheet.ActualHourUsed * cost;
 
-                                        header1.Details.Add(new TimesheetDetail
-                                        {
-                                            Index = index,
-                                            Date = timesheet.ActualStartDate.GetValueOrDefault(),
-                                            EmployeeID = timesheet.User.EmployeeID,
-                                            FullName = timesheet.User.FullName,
-                                            ProjectCode = project.Code,
-                                            ProjectRole = timesheet.ProjectRole.NameTH,
-                                            ProjectRoleOrder = timesheet.ProjectRole.Order,
-                                            Phase = timesheet.Phase.NameTH,
-                                            PhaseOrder = timesheet.Phase.Order,
-                                            TaskType = timesheet.TaskType.NameTH,
-                                            MainTask = timesheet.MainTask,
-                                            SubTask = timesheet.SubTask,
-                                            Hours = timesheet.ActualHourUsed,
-                                            Cost = totalCost,
-                                            RoleCost = cost,
-                                        });
+                                        var detail = timesheet.ToViewModel(index, project, totalCost, cost);
+                                        header1.Details.Add(detail);
                                     }
                                 }
                             }
@@ -604,9 +594,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                         using (var session = _sessionFactory.OpenSession())
                         {
                             //get User
-                            var empTarget = (from u in session.Query<User>()
-                                             where u.EmployeeID.ToString() == timesheetReportView.EmployeeID
-                                             select u).Single();
+                            var empTarget = session.Query<User>().QueryByEmployeeID(timesheetReportView.EmployeeID).Single();
 
                             var memberProjects = (from p in session.Query<Project>()
                                                   join m in session.Query<ProjectMember>() on p equals m.Project
@@ -647,7 +635,21 @@ namespace PJ_CWN019.TM.Web.Controllers
                                     CurrentProjectRole = pro.Member.ProjectRole.NameTH
                                 };
                                 actualCostForPerson.DetailHeaders.Add(header1);
-                                foreach (var item in pro.Project.TimeSheets.Where(m => m.User == empTarget))
+
+                                //fill only memebr timesheet
+                                var timesheet = from t in session.Query<Timesheet>()
+                                                where t.Project == pro.Project
+                                                && t.User == empTarget
+                                                && fromDate <= t.ActualStartDate 
+                                                && t.ActualStartDate <= toDate
+                                                select t;
+
+                                //var timesheet = from t in pro.Project.TimeSheets
+                                //                where t.User == empTarget
+                                //                && fromDate <= t.ActualStartDate && t.ActualStartDate <= toDate
+                                //                select t;
+
+                                foreach (var item in timesheet)
                                 {
                                     ++index;
                                     var roleCost = item.ProjectRole.ProjectRoleRates
@@ -656,22 +658,8 @@ namespace PJ_CWN019.TM.Web.Controllers
 
                                     var totalCost = item.ActualHourUsed * roleCost;
 
-                                    header1.Details.Add(new TimesheetDetail
-                                    {
-                                        Index = index,
-                                        Date = item.ActualStartDate.GetValueOrDefault(),
-                                        ProjectCode = pro.Project.Code,
-                                        ProjectRole = item.ProjectRole.NameTH,
-                                        ProjectRoleOrder = item.ProjectRole.Order,
-                                        Phase = item.Phase.NameTH,
-                                        PhaseOrder = item.Phase.Order,
-                                        TaskType = item.TaskType.NameTH,
-                                        MainTask = item.MainTask,
-                                        SubTask = item.SubTask,
-                                        Hours = item.ActualHourUsed,
-                                        Cost = totalCost,
-                                        RoleCost = roleCost,
-                                    });
+                                    var detail = item.ToViewModel(index, pro.Project, totalCost, roleCost);
+                                    header1.Details.Add(detail);
                                 }
                             }
 
@@ -714,7 +702,8 @@ namespace PJ_CWN019.TM.Web.Controllers
                                 FromDate = fromDate,
                                 ToDate = toDate,
                                 Department = dept.NameTH,
-                                IsDisplayCost = false
+                                IsDisplayCost = false,
+                                Title = "Actual Effort for Department"
                             };
 
                             var projectsOfDeptQuery = (from p in session.Query<Project>()
@@ -726,7 +715,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                                                        select p);
 
                             //for all
-                            filename = "all_actual_effort_for_department_{0}_{1}.xlsx";
+                            filename = "actual_effort_for_department_{0}_{1}.xlsx";
                             filename = string.Format(filename, dept.NameTH, DateTime.Now.ToString("yyyyMMdd"));
 
                             int index = 0;
@@ -743,10 +732,17 @@ namespace PJ_CWN019.TM.Web.Controllers
                                 //    .Where(t => t.User.Department == empTarget.Department)
                                 //    .ToList();
 
-                                var timesheetOnlyDepartment = pro.TimeSheets
-                            .Where(t => fromDate <= t.ActualStartDate
-                                && t.ActualStartDate <= toDate
-                                && t.User.Department == dept);
+                                var timesheetOnlyDepartment = from t in session.Query<Timesheet>()
+                                                              where t.Project == pro
+                                                              && fromDate <= t.ActualStartDate
+                                                              && t.ActualStartDate <= toDate
+                                                              && t.User.Department == dept
+                                                              select t;
+
+                            //    var timesheetOnlyDepartment = pro.TimeSheets
+                            //.Where(t => fromDate <= t.ActualStartDate
+                            //    && t.ActualStartDate <= toDate
+                            //    && t.User.Department == dept);
 
                                 foreach (var timesheet in timesheetOnlyDepartment)
                                 {
@@ -757,29 +753,150 @@ namespace PJ_CWN019.TM.Web.Controllers
 
                                     var totalCost = timesheet.ActualHourUsed * cost;
 
-                                    header1.Details.Add(new TimesheetDetail
-                                    {
-                                        Index = index,
-                                        Date = timesheet.ActualStartDate.GetValueOrDefault(),
-                                        EmployeeID = timesheet.User.EmployeeID,
-                                        FullName = timesheet.User.FullName,
-                                        ProjectCode = pro.Code,
-                                        ProjectRole = timesheet.ProjectRole.NameTH,
-                                        ProjectRoleOrder = timesheet.ProjectRole.Order,
-                                        Phase = timesheet.Phase.NameTH,
-                                        PhaseOrder = timesheet.Phase.Order,
-                                        TaskType = timesheet.TaskType.NameTH,
-                                        MainTask = timesheet.MainTask,
-                                        SubTask = timesheet.SubTask,
-                                        Hours = timesheet.ActualHourUsed,
-                                        Cost = totalCost,
-                                        RoleCost = cost,
-                                    });
+                                    var detail = timesheet.ToViewModel(index, pro, totalCost, cost);
+                                    header1.Details.Add(detail);
                                 }
                             }
 
                             fullFilepath = fullFilepath + filename;
-                            report.WriteExcel(fullFilepath);
+                            report.WriteExcel(fullFilepath, _addChartExportReport);
+                        }
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+                #endregion
+            }
+            else if (timesheetReportView.Name == "7") // Timesheet Data Recording
+            {
+                #region Timesheet Data Recording
+                if (timesheetReportView.Type == "1")// Excel
+                {
+                    if (timesheetReportView.Data == "1")// ทั้งหมด
+                    {
+                        var fromDate = DateTime.ParseExact(timesheetReportView.FromDate, dateFormat, new CultureInfo("en-US"));
+                        var toDate = DateTime.ParseExact(timesheetReportView.ToDate, dateFormat, new CultureInfo("en-US"));
+
+                        var timesheetDataRecording = new TimesheetDataRecording(fromDate, toDate);
+
+                        using (var session = _sessionFactory.OpenSession())
+                        {
+                            var allUser = (from u in session.Query<User>()
+                                           where u.Status == EmployeeStatus.Work
+                                           orderby u.Department.Division.NameTH, u.Department.NameTH, u.FirstNameTH, u.LastNameTH
+                                           select u).ToList();
+
+                            var allTimesheet = (from t in session.Query<Timesheet>()
+                                               orderby t.User.Department.Division.NameTH, t.User.Department.NameTH, t.User.FirstNameTH, t.User.LastNameTH
+                                                     where fromDate <= t.ActualStartDate
+                                                && t.ActualStartDate <= toDate select t).ToList();
+
+
+                            var queryTimesheet = (from u in allUser
+                                                 join t in allTimesheet on u equals t.User into u_t
+                                                 from ut in u_t.DefaultIfEmpty()
+                                                 select new
+                                                 {
+                                                     User = u,
+                                                     Timesheet = ut,
+                                                 }).ToList();
+
+                            foreach (var t in queryTimesheet)
+                            {
+                                //var queryTimesheet = from t in session.Query<Timesheet>()
+                                //                     orderby t.User.Department.Division.NameTH, t.User.Department.NameTH, t.User.FirstNameTH, t.User.LastNameTH
+                                //                     where fromDate <= t.ActualStartDate
+                                //                && t.ActualStartDate <= toDate && t.User == user
+                                //                     select new TimesheetDetail
+                                //                     {
+                                //                         EmployeeID = t.User.EmployeeID,
+                                //                         FullName = string.Format("{0} {1}", t.User.FirstNameTH, t.User.LastNameTH),
+                                //                         Email = t.User.Email,
+                                //                         PositionName = t.User.Position.NameTH,
+                                //                         DivisionName = t.User.Department.Division.NameTH,
+                                //                         DepartmentName = t.User.Department.NameTH,
+
+                                //                         Date = t.ActualStartDate.GetValueOrDefault(),
+                                //                         Hours = t.ActualHourUsed,
+                                //                     };
+
+                                string positionName = (t.User.Position != null) ? t.User.Position.NameTH : string.Empty;
+                                if (t.Timesheet != null)
+                                {
+                                    var td = new TimesheetDetail
+                                                     {
+                                                         EmployeeID = t.User.EmployeeID,
+                                                         FullName = string.Format("{0} {1}", t.User.FirstNameTH, t.User.LastNameTH),
+                                                         Email = t.User.Email,
+                                                         PositionName = positionName,
+                                                         DivisionName = t.User.Department.Division.NameTH,
+                                                         DepartmentName = t.User.Department.NameTH,
+                                                         Date = t.Timesheet.ActualStartDate.GetValueOrDefault(),
+                                                         Hours = t.Timesheet.ActualHourUsed,
+                                                     };
+                                    timesheetDataRecording.Details.Add(td);
+                                }
+                                else
+                                {
+                                    var td = new TimesheetDetail
+                                    {
+                                        EmployeeID = t.User.EmployeeID,
+                                        FullName = string.Format("{0} {1}", t.User.FirstNameTH, t.User.LastNameTH),
+                                        Email = t.User.Email,
+                                        PositionName = positionName,
+                                        DivisionName = t.User.Department.Division.NameTH,
+                                        DepartmentName = t.User.Department.NameTH,
+                                        Date = DateTime.MinValue,
+                                        Hours = 0,
+                                    };
+
+                                    timesheetDataRecording.Details.Add(td);
+                                }
+                            }
+                        }
+
+                        filename = "timesheet_data_recording_{0}.xlsx";
+                        filename = string.Format(filename, DateTime.Now.ToString("yyyyMMdd"));
+                        fullFilepath = fullFilepath + filename;
+                        timesheetDataRecording.WriteExcel(fullFilepath);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+                #endregion
+            }
+            else if (timesheetReportView.Name == "8") // Actual Effort for Manager
+            {
+                #region Actual Effort for Manager
+                if (timesheetReportView.Type == "1")// Excel
+                {
+                    if (timesheetReportView.Data == "1")// ทั้งหมด
+                    {
+                        using (var session = _sessionFactory.OpenSession())
+                        {
+                            int empID;
+                            int.TryParse(WebSecurity.CurrentUserName, out empID);
+
+                            var fromDate = DateTime.ParseExact(timesheetReportView.FromDate, dateFormat, new CultureInfo("en-US"));
+                            var toDate = DateTime.ParseExact(timesheetReportView.ToDate, dateFormat, new CultureInfo("en-US"));
+
+                            var actualEffortOfResourceManager = ReportService.BuildActualEffortOfResourceManager(empID, fromDate, toDate, session);
+                            filename = "actual_effort_for_manager_{0}.xlsx";
+                            filename = string.Format(filename, DateTime.Now.ToString("yyyyMMdd"));
+                            fullFilepath = fullFilepath + filename;
+                            actualEffortOfResourceManager.WriteExcel(fullFilepath);
                         }
                     }
                     else
@@ -806,6 +923,11 @@ namespace PJ_CWN019.TM.Web.Controllers
             };
 
             return Json(result, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult ProjectDashboard()
+        {
+            return View();
         }
     }
 }

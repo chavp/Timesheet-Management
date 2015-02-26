@@ -23,6 +23,10 @@ namespace Cwn.PM.FluentMapping.Mappings
                 .ParentKeyColumn("APP_ROLE_ID")
                 .ChildKeyColumn("AUT_ID");
 
+            HasManyToMany(x => x.AppUsers).Table("AUT_LOGIN_USERS_TO_APP_ROLE")
+                .ParentKeyColumn("APP_ROLE_ID")
+                .ChildKeyColumn("AUT_LOGIN_ID");
+
             MapVersion();
         }
     }

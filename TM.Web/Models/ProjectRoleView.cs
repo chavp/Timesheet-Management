@@ -9,5 +9,10 @@ namespace PJ_CWN019.TM.Web.Models
     {
         public long ProjectRoleID { get; set; }
         public string ProjectRoleName { get; set; }
+        public decimal ProjectRoleCost { get; set; }
+
+        public int Order { get; set; }
+        public long ProjectMemberCount { get; set; }
+        public long TimesheetCount { get; set; }
     }
 }

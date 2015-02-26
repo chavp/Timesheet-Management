@@ -22,6 +22,10 @@ namespace Cwn.PM.FluentMapping.Mappings
 
             References(x => x.Division, "DIVISION_ID");
 
+            //HasMany(x => x.Positions)
+            //    .Cascade
+            //    .All();
+
             MapVersion();
         }
     }

@@ -7,15 +7,20 @@ using System.Web.Mvc;
 namespace PJ_CWN019.TM.Web.Controllers
 {
     using Cwn.PM.BusinessModels.Entities;
+    using Cwn.PM.BusinessModels.Queries;
     using NHibernate;
     using NHibernate.Linq;
     using PJ_CWN019.TM.Web.Filters;
     using PJ_CWN019.TM.Web.Models;
+    using PJ_CWN019.TM.Web.Models.Providers;
+    using System.Web.SessionState;
 
     [ErrorLog]
     [ProfileLog]
-    [Authorize(Roles="Support")]
+    [Authorize(Roles = ConstAppRoles.Support)]
     [FourceToChangeAttribute]
+    [SessionState(SessionStateBehavior.Disabled)]
+    [ValidateAntiForgeryTokenOnAllPosts]
     public class SupportController : Controller
     {
         ISessionFactory _sessionFactory = null;
@@ -37,21 +42,24 @@ namespace PJ_CWN019.TM.Web.Controllers
             using (var session = _sessionFactory.OpenSession())
             {
                 var userList = (from u in session.Query<User>()
-                                where u.EmployeeID.ToString().Contains(query)
+                                where u.Status == EmployeeStatus.Work
+                                && (u.EmployeeID.ToString().Contains(query)
                                 || u.FirstNameEN.Contains(query)
                                 || u.FirstNameTH.Contains(query)
                                 || u.LastNameEN.Contains(query)
-                                || u.LastNameTH.Contains(query)
+                                || u.LastNameTH.Contains(query))
                                 orderby u.EmployeeID, u.FirstNameTH, u.LastNameTH
                                 select new EmployeeView
                                 {
                                     ID = u.ID,
-                                    EmployeeID =u.EmployeeID,
+                                    EmployeeID = u.EmployeeID,
                                     FullName = u.FirstNameTH + " " + u.LastNameTH,
                                     Display = u.FirstNameTH + " " + u.LastNameEN,
                                     LastChangedPassword = u.LastPasswordChangedDate,
                                     LastLoginDate = u.LastLoginDate,
                                     Position = u.Position.NameTH,
+                                    Division = u.Department.Division.NameTH,
+                                    Department = u.Department.NameTH,
                                 });
 
                 count = userList.Count();

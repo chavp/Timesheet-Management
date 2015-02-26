@@ -165,9 +165,12 @@ namespace PJ_CWN019.TM.Web.Models.Providers
             {
                 var user = (from u in session.Query<User>()
                             where u.EmployeeID.ToString() == username
-                            select u).FirstOrDefault();
+                            select u).SingleOrDefault();
 
-                if (user == null) return null;
+                if (user == null)
+                {
+                    return null;
+                }
 
                 var membershipUser = new CwnMembershipUser(
                     "CwnMembershipProvider",
@@ -265,6 +268,7 @@ namespace PJ_CWN019.TM.Web.Models.Providers
             {
                 var user = (from u in session.Query<User>()
                             where u.EmployeeID.ToString() == username
+                            && u.Status == EmployeeStatus.Work
                                select u).FirstOrDefault();
 
                 if (user == null)

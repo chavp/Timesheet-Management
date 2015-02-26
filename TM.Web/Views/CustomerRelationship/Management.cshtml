@@ -1,0 +1,152 @@
+﻿@{
+    ViewBag.Title = "Management";
+}
+
+@Html.Partial("_BasicTemplate", new PJ_CWN019.TM.Web.Models.TemplateView
+    {
+        MainPanelID = "crmPanel",
+        MainIcon = "glyphicon glyphicon-link",
+        MainTitle = "Customer Relationship Management (CRM)"
+    })
+
+@section scripts{
+<script>
+    paramsView.urlGetCustomer = "@Url.Content("~/CustomerRelationship/GetAllCustomer")";
+    paramsView.urlDeleteCustomer= "@Url.Content("~/CustomerRelationship/DeleteCustomer")";
+    paramsView.urlSaveCustomer = "@Url.Content("~/CustomerRelationship/SaveCustomer")";
+    paramsView.urlReadIndustry = "@Url.Content("~/CustomerRelationship/GetAllIndustryForCombobox")";
+
+    Ext.Loader.setPath('Ext.ux', '@Url.Content("~/Scripts/ext-4.2.1-gpl/ux")');
+
+    Ext.onReady(function () {
+
+        var customerstore = Ext.create("widget.customerstore");
+        customerstore.load();
+
+        var industrystore = Ext.create("widget.industrystore");
+        industrystore.load({
+            url: paramsView.urlReadIndustry
+        });
+
+        Ext.create('Ext.tab.Panel', {
+            renderTo: 'crmPanel',
+            layout: { type: 'border', padding: 1 },
+            height: 630,
+            width: 'auto',
+            //border: 1,
+            frame: true,
+            defaults: {
+                frame: false,
+                split: true
+            },
+            items: [
+                {
+                    xtype: "grid",
+                    layout: { type: 'border', padding: 1 },
+                    title: TextLabel.customersTabTitle,
+                    store: customerstore,
+                    columns: {
+                        defaults: {
+                            sortable: false,
+                            menuDisabled: true,
+                            renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                                if (value) {
+                                    value = Ext.String.htmlEncode(value);
+                                    // "double-encode" before adding it as a data-qtip attribute
+                                    metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+                                }
+                                return value;
+                            }
+                        },
+                        items: [
+                            {
+                                xtype: 'rownumberer',
+                                width: 30,
+                                locked: true
+                            },
+                            { text: 'ID', dataIndex: 'ID', hidden: true },
+                            {
+                                xtype: 'actioncolumn', width: 30,
+                                items: [{
+                                    xtype: 'button',
+                                    text: TextLabel.editCmdLabel,
+                                    tooltip: TextLabel.editCmdLabel,
+                                    iconCls: 'edit-icon',
+                                    handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                        grid.getSelectionModel().select(record);
+
+                                        var editForm = Ext.create('widget.customerwindow', {
+                                            title: TextLabel.customerEditTitle,
+                                            iconCls: 'edit-icon',
+                                            animateTarget: row,
+                                            modal: true,
+                                            saveUrl: paramsView.urlSaveCustomer,
+                                            industrystore: industrystore,
+                                            customerstore: customerstore,
+                                            editData: record
+                                        });
+
+                                        editForm.setValues(record);
+                                        editForm.show();
+                                    }
+                                }]
+                            },
+                            {
+                                text: TextLabel.customerColumtextText, dataIndex: 'Name', flex: 1
+                            },
+                            {
+                                text: TextLabel.industryTypeColumtextText, dataIndex: 'IndustryDisplay', flex: 1
+                            },
+                            {
+                                xtype: 'actioncolumn',
+                                width: 30,
+                                items: [{
+                                    xtype: 'button',
+                                    iconCls: 'delete-icon',
+                                    text: TextLabel.cmdDeleteText,
+                                    tooltip: TextLabel.cmdDeleteText,
+                                    scope: this,
+                                    xtype: 'button',
+                                    isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                        if (record.get('ProjectCount') > 0) return true;
+                                        return false;
+                                    },
+                                    handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                        grid.getSelectionModel().select(record);
+                                        CommandActionBuilder.deleteData(record.data.ID, paramsView.urlDeleteCustomer, customerstore);
+                                    }
+                                }]
+                            }
+                        ]
+                    },
+                    tbar: [{
+                        cls: 'btn',
+                        xtype: 'button',
+                        iconCls: 'glyphicon glyphicon-plus',
+                        text: TextLabel.customerAddText,
+                        handler: function (btn, evt) {
+                            var newWin = Ext.create("widget.customerwindow",
+                            {
+                                title: TextLabel.customerAddText,
+                                animateTarget: btn,
+                                modal: true,
+                                saveUrl: paramsView.urlSaveCustomer,
+                                industrystore: industrystore,
+                                customerstore: customerstore
+                            });
+                            newWin.show();
+                        }
+                    }],
+                    // paging bar on the bottom
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: customerstore,
+                        displayInfo: true,
+                        displayMsg: TextLabel.customer + ' ที่กำลังแสดงอยู่ {0} - {1} of {2}',
+                        emptyMsg: "ไม่มี " + TextLabel.customer
+                    })
+                }
+            ]
+        });
+    });
+</script>
+}

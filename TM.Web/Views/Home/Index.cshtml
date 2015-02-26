@@ -1,50 +1,57 @@
 ﻿@{
     ViewBag.Title = "Chan Wanich Co.,Ltd. System Integration Company";
 
-    var rolesDisplayeList = Roles.GetRolesForUser();
-
-    ViewBag.AppRoleTitle = string.Join(" / ", rolesDisplayeList.ToArray()).Replace("ProjectOwner", "PM");
+    var rolesDisplayeList = new List<string>(Roles.GetRolesForUser());
+    rolesDisplayeList.Remove(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.TopManager);// Dont display
+    rolesDisplayeList.Remove(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.MiddleManager);// Dont display
+    
+    ViewBag.AppRoleTitle = string.Join(" / ", rolesDisplayeList.ToArray()).Replace(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner, "PM");
 
     string timesheetAction = "";
     string addProjectMemberAction = "";
     string editProjectMemberAction = "";
     string reportAction = "href=" + Url.Action("Report", "Timesheet");
+    string emplyeeManagementAction = "";
 
     var featuresForDisplay = new Dictionary<string, string>();
 
-    if (Roles.IsUserInRole("Member"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Member))
     {
         timesheetAction = "href=" + Url.Action("Timesheet", "Timesheet");
     }
-    if (Roles.IsUserInRole("Executive") || Roles.IsUserInRole("Admin"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Executive) 
+        || Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
     {
         reportAction = "href=" + Url.Action("Report", "ProjectPortfolio");
+        emplyeeManagementAction = "href=" + Url.Action("Employees", "Organization");
     }
 
-    if (Roles.IsUserInRole("ProjectOwner"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
     {
         editProjectMemberAction = "href=" + Url.Action("SearchReadOnly", "Project");
     }
-    if (Roles.IsUserInRole("Manager") || Roles.IsUserInRole("Admin"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager) 
+        || Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
     {
         addProjectMemberAction = "href=" + Url.Action("Search", "Project");
         editProjectMemberAction = addProjectMemberAction;
     }
 
     // Display Features
-    if (Roles.IsUserInRole("Member"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Member))
     {
         featuresForDisplay.Add("กรอก Timesheet", timesheetAction);
     }
-    if (Roles.IsUserInRole("Admin"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
     {
         featuresForDisplay.Add("Assign Sale, Project Manager และ Resource Manager ให้กับโครงการ", addProjectMemberAction);
+        featuresForDisplay.Add("การจัดการพนักงานขององค์กร", emplyeeManagementAction);
     }
-    if (Roles.IsUserInRole("Manager"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager))
     {
         featuresForDisplay.Add("Assign Resource ภายในแผนกตนเอง ให้กับโครงการ", addProjectMemberAction);
     }
-    if (Roles.IsUserInRole("ProjectOwner"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
     {
         featuresForDisplay.Add("บริหารจัดการ Team Member ในโครงการ", editProjectMemberAction);
     }
@@ -52,24 +59,25 @@
     var reportsFeature = new List<string>();
 
     // Reports Feature
-    if (Roles.IsUserInRole("Member"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Member))
     {
         reportsFeature.Add("Actual Effort for Person");
     }
 
-    if (Roles.IsUserInRole("Manager"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager))
     {
         reportsFeature.Add("Actual Effort for Department");
+        reportsFeature.Add("Timesheet Data Recording");
     }
 
-    if (Roles.IsUserInRole("ProjectOwner"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
     {
         reportsFeature.Add("Actual Cost for Person");
         reportsFeature.Add("Actual Cost for All Person");
         reportsFeature.Add("Actual Cost for Project");
     }
 
-    if (Roles.IsUserInRole("Admin"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
     {
         reportsFeature.Add("Actual Cost for Person");
         reportsFeature.Add("Actual Effort for Person");
@@ -77,23 +85,35 @@
         reportsFeature.Add("Actual Effort for Department");
         reportsFeature.Add("Actual Cost for Project");
         reportsFeature.Add("Actual Cost for All Project");
-
-        if (Roles.IsUserInRole("ProjectOwner"))
+        reportsFeature.Add("Timesheet Data Recording");
+        
+        if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
         {
             reportsFeature.Remove("Actual Cost for All Person");
         }
     }
 
-    if (Roles.IsUserInRole("Executive"))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Executive))
     {
         reportsFeature.Add("Actual Cost for Person");
         reportsFeature.Add("Actual Cost for Department");
         reportsFeature.Add("Actual Cost for Project");
         reportsFeature.Add("Actual Cost for All Project");
-
-        if (Roles.IsUserInRole("ProjectOwner"))
+        reportsFeature.Add("Timesheet Data Recording");
+        
+        if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
         {
             reportsFeature.Remove("Actual Cost for All Person");
+        }
+    }
+
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager)
+        || Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Executive))
+    {
+        if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.TopManager)
+            || Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.MiddleManager))
+        {
+            reportsFeature.Add("Actual Effort for Manager");
         }
     }
     
@@ -107,6 +127,109 @@
      width:100%;
      margin: 0 auto;
     }
+
+    text {
+      font: 13px sans-serif;
+    }
+
+    rect.background {
+      fill: white;
+    }
+
+    .axis {
+      shape-rendering: crispEdges;
+    }
+
+    
+
+    .y.axis path {
+      stroke: black;
+    }
+
+    .today-line {
+        stroke: rgb(255,0,0);
+        stroke-width: 2;
+        opacity: 0.5;
+    }
+    .today-text {
+        font: 10px sans-serif;
+    }
+
+    svg {
+        /*border-color: gray;
+        border-style: solid;*/    
+        cursor: move;
+    }
+
+    .con {
+      fill: steelblue;
+      /*opacity: 0.8;*/
+    }
+
+    .war {
+      fill: lightgreen;
+      /*opacity: 0.3;*/
+    }
+
+    .prog {
+      fill: green;
+      /*opacity: 0.8;*/
+    }
+
+    text.prog {
+      fill: black;
+      font: 13px sans-serif;
+      font-weight: bold;
+    }
+
+    .dev {
+      fill: lightpink;
+      /*opacity: 0.8;*/
+    }
+
+    rect text {
+      fill: white;
+      font: 10px sans-serif;
+      text-anchor: end;
+    }
+
+    .data {
+        fill: red;
+    }
+
+    div ul{
+        margin-top: 0;
+        display: block;
+    }
+
+    #legend {
+        padding: 0;
+        /*float: right;*/
+    }
+    .list-inline {
+        /*padding-left: 10px;
+        list-style: none;
+        width: 80em;*/
+        padding: 0;
+        
+    }
+    li.key {
+        border-top-width: 13px;
+        border-top-style: solid;
+        font: 10px sans-serif;
+        width: 8%;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .tick line{
+        opacity: 0.2;
+    }
+    
+      rect {
+        stroke-width: 1;
+      }
+
 </style>
 <div class="container">
     <div class="bs-docs-section">
@@ -119,124 +242,65 @@
         </div>
         <div class="row">
             <div class="col-lg-12">
-@*                @if (Roles.IsUserInRole("Member"))
-                {
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Member</h3>
-                        </div>
-                        <div class="panel-body">
-                            <p>a. <a @timesheetAction>กรอก Timesheet</a></p>
-                            <p>b. <a @reportAction>เรียกดูรายงาน Actual Effort for Person</a></p>
-                        </div>
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Project Timeline</h3>
                     </div>
-                }
-                @if (Roles.IsUserInRole("Manager"))
-                {
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Manager</h3>
-                        </div>
-                        <div class="panel-body">
-                            <p>a. <a @timesheetAction>กรอก Timesheet</a></p>
-                            <p>b. <a @addProjectMemberAction>Assign resource ภายในแผนกตนเองให้กับโครงการ</a></p>
-                            <p>c. <a @reportAction>เรียกดูรายงาน Actual Effort for Person และ Actual Effort for Department ได้</a></p>
-                        </div>
+                    <div class="panel-body">
+                        <div class="panel panel-info">
+                            <div class="row">
+                                <div id="prj-timeline-fillter" class="col-md-8 col-md-offset-2"></div>
+                            </div>
+                                <svg id="project-timeline"></svg>
+                                <div class="container">
+                                    <div id="legend" class="col-md-8 col-md-offset-2"></div>
+                                </div>
+                            </div>
                     </div>
-                }
-                @if (Roles.IsUserInRole("Executive"))
-                {
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Executive</h3>
-                        </div>
-                        <div class="panel-body">
-                            <p>a. <a @reportAction>เรียกดูรายงานที่เกี่ยวกับ Cost ได้ทั้งหมด ดังนี้</a></p>
-                            <p>&nbsp;&nbsp;&nbsp;i. Actual Cost for Person</p>
-                            <p>&nbsp;&nbsp;&nbsp;ii. Actual Cost for Department</p>
-                            <p>&nbsp;&nbsp;&nbsp;iii. Actual Cost for project</p>
-                            <p>&nbsp;&nbsp;&nbsp;iv. Actual Cost for All Project</p>
-                        </div>
-                    </div>
-                }
-                @if (Roles.IsUserInRole("Admin"))
-                {
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Admin</h3>
-                        </div>
-                        <div class="panel-body">
-                            <p>a. <a @timesheetAction>กรอก Timesheet</a></p>
-                            <p>b. <a @addProjectMemberAction>สามารถ Assign Sale, Project Manager และ Resource Manager ให้กับโครงการ</a></p>
-                            <p>c. <a @reportAction>เรียกดูรายงานได้ทั้งหมด ดังนี้</a> </p>
-                            <p>&nbsp;&nbsp;&nbsp;i. Actual Cost for Person</p>
-                            <p>&nbsp;&nbsp;&nbsp;ii. Actual Effort for Person</p>
-                            <p>&nbsp;&nbsp;&nbsp;iii. Actual Effort for Department</p>
-                            <p>&nbsp;&nbsp;&nbsp;iv. Actual Cost for Department</p>
-                            <p>&nbsp;&nbsp;&nbsp;v. Actual Cost for project</p>
-                            <p>&nbsp;&nbsp;&nbsp;vi. Actual Cost for All Project</p>
-                        </div>
-                    </div>
-                }
-                @if (Roles.IsUserInRole("ProjectOwner"))
-                {
-                    <div class="panel panel-primary">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Project Manager</h3>
-                        </div>
-                        <div class="panel-body">
-                            <p>a. <a @timesheetAction>กรอก Timesheet</a></p>
-                            <p>b. <a @editProjectMemberAction>แก้ไข หน้าที่ในโครงการ (Project Role) ให้กับสมาชิกในโครงการ</a></p>
-                            <p>c. <a @reportAction>เรียกดูรายงาน  ได้ดังนี้</a></p>
-                            <p>&nbsp;&nbsp;&nbsp;i. Actual Effort for Person</p>
-                            <p>&nbsp;&nbsp;&nbsp;ii. Actual Cost for Person</p>
-                            <p>&nbsp;&nbsp;&nbsp;iii. Actual Cost for Project</p>
-                        </div>
-                    </div>
-                }*@
+                </div>
                 <div class="panel panel-primary">
                     <div class="panel-heading">
                         <h3 class="panel-title">@ViewBag.AppRoleTitle</h3>
                     </div>
                     <div class="panel-body">
-                        <div class="panel panel-info">
-                            <div class="panel-heading">
-                                <h4 class="panel-title">Operation Features</h4>
+                            <div class="panel panel-info">
+                                <div class="panel-heading">
+                                    <h4 class="panel-title">Operation Features</h4>
+                                </div>
+                                <ul>
+                                    @foreach (var item in featuresForDisplay)
+                                    {
+                                        <li><a @item.Value>@item.Key</a></li>
+                                    }
+                                </ul>
                             </div>
-                            <ul>
-                            @foreach (var item in featuresForDisplay)
-                            {
-                                <li><a @item.Value>@item.Key</a></li>
-                            }
-                            </ul>
-                        </div>
 
-                        <div class="panel panel-info">
-                            <div class="panel-heading">
-                                <h4 class="panel-title"><a @reportAction>Report Features</a></h4>
+                            <div class="panel panel-info">
+                                <div class="panel-heading">
+                                    <h4 class="panel-title"><a @reportAction>Report Features</a></h4>
+                                </div>
+                                <ul>
+                                    @foreach (var item in reportsFeature)
+                                    {
+                                        <li>@item</li>
+                                    }
+                                </ul>
                             </div>
-                            <ul>
-                            @foreach (var item in reportsFeature)
-                            {
-                                <li>@item</li>
-                            }
-                            </ul>
-                        </div>
 
-                    </div>
+                        </div>
                 </div>
                 <br />
 
-                <div>
+                @*<div>
                     <img class="centered" id="op-flow" usemap="#op-flow-map" src="@Url.Content("~/Content/Images/Operation_Flow.jpg")" />
-                </div>
+                </div>*@
             </div>
         </div>
     </div>
 </div>
 
 <map id="op-flow-image-map" name="op-flow-map">
-    @if (Roles.IsUserInRole("Admin"))
+    @if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
     {
         <area @addProjectMemberAction 
             title="เพิ่ม/กำหนด ผู้รับผิดชอบเข้าโครงการ / Project Membership" 
@@ -254,73 +318,73 @@
             title="ดูรายงาน / Report" 
             feature="report-timesheet-admin" 
             shape="rect" 
-            coords="115,600,275,660">
+            coords="115,600,270,650">
     }
 
-    @if (Roles.IsUserInRole("ProjectOwner"))
+    @if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
     {
         <area @editProjectMemberAction 
             title="กำหนด ผู้รับผิดชอบเข้าโครงการ / Project Membership" 
             feature="project-member-po" 
             shape="rect" 
-            coords="320,475,480,515">
+            coords="320,475,475,510">
         
         <area @timesheetAction 
             title="บันทึก Timesheet / Record Timesheet" 
             feature="record-timesheet-po" 
             shape="rect" 
-            coords="320,545,480,580">
+            coords="320,545,475,575">
         
         <area @reportAction 
             title="ดูรายงาน / Report" 
             feature="report-timesheet-po" 
             shape="rect" 
-            coords="320,600,480,660">
+            coords="320,600,470,650">
     }
     
-    @if (Roles.IsUserInRole("Manager"))
+    @if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager))
     {
         <area @addProjectMemberAction 
             title="เพิ่ม หรือ กำหนด ผู้รับผิดชอบเข้าโครงการ / Project Membership" 
             feature="project-member-manager" 
             shape="rect" 
-            coords="525,475,705,515">
+            coords="525,475,695,508">
         
         <area @timesheetAction 
             title="บันทึก Timesheet / Record Timesheet" 
             feature="record-timesheet-manager" 
             shape="rect" 
-            coords="525,545,705,580">
+            coords="525,545,695,575">
         
         <area @reportAction 
             title="ดูรายงาน / Report" 
             feature="report-timesheet-manager" 
             shape="rect" 
-            coords="525,600,705,660">
+            coords="525,600,695,650">
     }
     
-    @if (Roles.IsUserInRole("Member"))
+    @if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Member))
     {
         <area @timesheetAction 
             title="บันทึก Timesheet / Record Timesheet" 
             feature="record-timesheet-member" 
             shape="rect" 
-            coords="750,475,910,520">
+            coords="745,475,900,508">
         
         <area @reportAction 
             title="ดูรายงาน / Report" 
             feature="report-timesheet-member" 
             shape="rect" 
-            coords="750,600,910,660">
+            coords="745,603,900,650">
     }
     
-    @if (Roles.IsUserInRole("Executive"))
+    @if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Executive))
     {
         <area @reportAction 
             title="ดูรายงาน / Report" 
             feature="report-timesheet-executive" 
             shape="rect" 
-            coords="955,160,1115,215">
+            coords="940,160,1100,205">
     }
 @*    <area @addProjectMemberAction 
         title="เพิ่ม/กำหนดผู้รับผิดชอบเข้าโครงการ / Project Membership" 
@@ -343,19 +407,559 @@
 
 @section scripts{
     @Scripts.Render("~/bundles/imagemapster")
+    @Scripts.Render("~/bundles/d3")
     <script>
-        $(function () {
-            $('#op-flow').mapster({
-                mapKey: "feature",
-                fillOpacity: 0.5,
-                fillColor: 'ADE9EE',
-                stroke: false,
-                singleSelect: true,
-                isSelectable: false,
-                clickNavigate: true
-            });
+    $(function () {
+        $('#op-flow').mapster({
+            mapKey: "feature",
+            fillOpacity: 0.5,
+            fillColor: 'ADE9EE',
+            stroke: false,
+            singleSelect: true,
+            isSelectable: false,
+            clickNavigate: true
+        });
 
+        var startDate = new Date("@ViewBag.FromDate"),
+            endDate = new Date("@ViewBag.ToDate");
+
+        //var prjTimelineFillter = Ext.create("widget.datefield", {
+        //    renderTo: "prj-timeline-fillter",
+        //    format: "d/m/Y",
+        //    value: startDate
+        //});
+
+        //var from = Ext.create('widget.datefield', {
+        //    width: 110,
+        //    format: "d/m/Y",
+        //    allowBlank: false,
+        //    editable: true,
+        //    value: startDate
+        //});
+
+        //var to = Ext.create('widget.datefield', {
+        //    width: 110,
+        //    format: "d/m/Y",
+        //    allowBlank: true,
+        //    editable: true,
+        //    value: endDate
+        //});
+
+        var critiries = Ext.create('Ext.data.Store', {
+            fields: ['value', 'name'],
+            data: [
+                { "value": 3, "name": "Last 3 Months" },
+                { "value": 9, "name": "Last 9 Months" },
+                { "value": 12, "name": "Last 12 Months" }
+            ]
+        });
+
+        var prjTimelineFillter = Ext.create("widget.panel", {
+            renderTo: "prj-timeline-fillter",
+            layout: 'hbox',
+            items: [
+                {
+                    xtype: "fieldcontainer",
+                    fieldLabel: TextLabel.searchCriterionLabel,
+                    layout: 'hbox',
+                    fieldDefaults: {
+                        labelWidth: 300,
+                        allowBlank: false,
+                        labelAlign: 'right'
+                    },
+                    items: [
+                        {
+                            xtype: 'combo',
+                            width: 300,
+                            forceSelection: true,
+                            store: critiries,
+                            queryMode: 'local',
+                            displayField: 'name',
+                            valueField: 'value',
+                            editable: false,
+                            value: 3
+                        }
+                    ]
+                }
+            ]
+        });
+
+        @*var button = Ext.create('Ext.Button', {
+            renderTo: "prj-timeline-fillter-cmd",
+            text: TextLabel.cmdSearchText
+        });
+
+        button.on('click', function () {
+            console.log(from);
+            //createVisTimeline("@ViewBag.FromDate", "@ViewBag.ToDate");
+            //updateVisTimeline
+        });*@
+
+        createVisTimeline("@ViewBag.FromDate", "@ViewBag.ToDate");
+
+        function updateVisTimeline(from, to) {
+            var url_between = "@Url.Content("~/Home/GetProjectTimeline?from=")" + from + "&to=" + to;
+            d3.json(url_between,
+                function (error, data) {
+
+                }
+            );
+        }
+
+        function createVisTimeline(from, to) {
+            var url_between = "@Url.Content("~/Home/GetProjectTimeline?from=")" + from + "&to=" + to;
+                d3.json(url_between,
+                function (error, data) {
+
+                    //console.log(data);
+                    if (error) {
+                        console.log(error);
+                    } else {
+
+                        var width_panel = $(".panel .panel-info").width();
+                        var projects = [];
+
+                        for (var i = 0; i < data.length; i++) {
+                            var project = data[i];
+                            projects.push({
+                                name: project.Name,
+                                startDate: project.StartDate,
+                                contractStartDate: project.ContractStartDate,
+                                contractEndDate: project.ContractEndDate,
+                                warrantyEndDate: project.WarrantyEndDate,
+                                progress: project.Progress
+                            });
+                        }
+                        var barHeight = 35;
+
+                        var margin = { top: 30, right: 20, bottom: 10, left: 70 },
+                                        width = width_panel - margin.left - margin.right,
+                                        height = data.length * barHeight - margin.top - margin.bottom;
+
+                        var duration = 1255, delay = 50;
+
+                        var svg = d3.select("#project-timeline")
+                                    .attr("width", width + margin.left + margin.right)
+                                    .attr("height", height + margin.top + margin.bottom);
+
+                        svg.append("clipPath").attr("id", "chart-area")
+                            .append("rect")
+                            .attr("x", 0)
+                            .attr("y", 0)
+                            .attr("width", width - margin.left - margin.right)
+                            .attr("height", height);
+
+                        // gradient for presale
+                        var gradient = svg.append("svg:defs")
+                        .append("svg:linearGradient")
+                        .attr("id", "gradient")
+                        .attr("x1", "0%")
+                        .attr("y1", "0%")
+                        .attr("x2", "100%")
+                        .attr("y2", "0%")
+                        .attr("spreadMethod", "pad");
+
+                        gradient.append("svg:stop")
+                        .attr("offset", "0%")
+                        .attr("stop-color", "steelblue")
+                        .attr("stop-opacity", 1);
+
+                        gradient.append("svg:stop")
+                        .attr("offset", "100%")
+                        .attr("stop-color", "white")
+                        .attr("stop-opacity", 1);
+
+                        // gradient for inprogress
+                        var gradientProgress = svg.append("svg:defs")
+                        .append("svg:linearGradient")
+                        .attr("id", "gradient-progress")
+                        .attr("x1", "100%")
+                        .attr("y1", "0%")
+                        .attr("x2", "0%")
+                        .attr("y2", "0%")
+                        .attr("spreadMethod", "pad");
+
+                        gradientProgress.append("svg:stop")
+                        .attr("offset", "0%")
+                        .attr("stop-color", "green")
+                        .attr("stop-opacity", 1);
+
+                        gradientProgress.append("svg:stop")
+                        .attr("offset", "100%")
+                        .attr("stop-color", "green")
+                        .attr("stop-opacity", 0, 8);
+
+                        // gradient for start contract
+                        var gradientContractStart = svg.append("svg:defs")
+                        .append("svg:linearGradient")
+                        .attr("id", "gradient-contract-start")
+                        .attr("x1", "0%")
+                        .attr("y1", "0%")
+                        .attr("x2", "100%")
+                        .attr("y2", "0%")
+                        .attr("spreadMethod", "pad");
+
+                        gradientContractStart.append("svg:stop")
+                        .attr("offset", "0%")
+                        .attr("stop-color", "green")
+                        .attr("stop-opacity", 1);
+
+                        gradientContractStart.append("svg:stop")
+                        .attr("offset", "100%")
+                        .attr("stop-color", "green")
+                        .attr("stop-opacity", 0, 8);
+
+                        var barsizeNonEndCon = 200;
+
+                        var chart = svg.append("g")
+                                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                        //var x = d3.time.scale().domain([d3.time.day.offset(startDate, -7), d3.time.day.offset(endDate, 7)])
+                        //        .rangeRound([0, width - margin.left - margin.right]);
+
+                        var x = d3.time.scale()
+                                .domain([startDate, endDate])
+                                .rangeRound([0, width - margin.left - margin.right]);
+
+                        var y = d3.scale.ordinal()
+                            .domain(projects.map(function (d) { return d.name; }))
+                            .rangeRoundBands([0, height - margin.top - margin.bottom], .09);
+
+                        function make_x_axis() {
+                            return d3.svg.axis()
+                            .scale(x)
+                            .orient("top")
+                            .ticks(d3.time.months, 1)
+                            .tickFormat(d3.time.format('%d/%m/%Y'))
+                            .innerTickSize(-(height - margin.top - margin.bottom))  // http://bl.ocks.org/hunzy/11110940
+                            .outerTickSize(0)
+                            .tickPadding(10);
+                            //.tickSize(5)
+                            //.tickPadding(8)
+
+                        }
+                        var xAxis = make_x_axis();
+
+                        function make_y_axis() {
+                            return d3.svg.axis()
+                            .scale(y)
+                            .orient('left')
+                            .tickPadding(10);
+                        }
+                        var yAxis = make_y_axis();
+
+                        chart.append("g")
+                            .attr("class", "x axis");
+                        // Update the x-axis.
+                        chart.selectAll(".x.axis")
+                            .transition()
+                            .duration(duration)
+                            .call(xAxis);
+
+                        yAxis.innerTickSize(-width);
+
+                        chart.append('g')
+                          .attr('class', 'y axis');
+                        chart.selectAll(".y.axis").transition()
+                          .duration(duration)
+                          .call(yAxis);
+
+                        var zoom = d3.behavior.zoom()
+                                    .scaleExtent([1, 1])
+                                    .x(x)
+                                    .on('zoom', function () {
+
+                                        chart.select(".x.axis").call(xAxis).selectAll("text");
+                                        //  .style("text-anchor", "end")
+                                        //  .attr("dx", "-.8em")
+                                        //  .attr("dy", "-1em")
+                                        //  .attr("transform", "rotate(90)");
+
+                                        chart.select("line.today-line")
+                                                .attr("x1", x(toDay))
+                                                .attr("y1", y(0))
+                                                .attr("x2", x(toDay))
+                                                .attr("y2", yChart(1));
+
+                                        chart.select("text.today-text")
+                                                .text("ToDay: " + format(toDay))
+                                                .attr("x", x(toDay) + 5)
+                                                .attr("y", yChart(1) - 5);
+
+                                        update();
+
+                                    });
+
+                        var format = d3.time.format('%d/%m/%Y');
+
+                        // presale
+                        chart.append("g").attr("clip-path", "url(#chart-area)")
+                            .selectAll("rect.con")
+                            .data(projects)
+                            .enter().append("rect")
+                            .attr("class", "con")
+                            .attr("transform", function (d, i) { return "translate(0," + y(d.name) + ")"; })
+                            .attr("x", function (d, i) {
+                                return x(new Date(d.startDate));
+                            })
+                            .attr("width", 0)
+                            .attr("height", y.rangeBand())
+                        ;
+                        chart.selectAll("g rect.con")
+                            //.transition()
+                            //.duration(duration)
+                            //.delay(function (d, i) {
+                            //    return delay * i;
+                            //})
+                            .attr("width", function (d, i) {
+                                if (d.contractStartDate === "" && d.contractEndDate === "") return barsizeNonEndCon;
+                                return x(new Date(d.contractStartDate)) - x(new Date(d.startDate));
+                            })
+                            .style("fill", function (d) {
+                                if (d.contractStartDate === "" && d.contractEndDate === "") return "url(#gradient)";
+                            });
+                        //************************************************
+
+                        //implement 
+                        chart.append("g").attr("clip-path", "url(#chart-area)")
+                            .selectAll("rect.war")
+                            .data(projects)
+                            .enter()
+                            .append("rect")
+                            .attr("class", "war")
+                            .attr("transform", function (d, i) { return "translate(0," + y(d.name) + ")"; })
+                            .attr("x", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                return x(new Date(d.contractStartDate));
+                            })
+                            .attr("width", 0)
+                            .attr("height", y.rangeBand())
+                        ;
+                        chart.selectAll("g rect.war")
+                            //.transition()
+                            //.duration(duration)
+                            //.delay(function (d, i) {
+                            //    return delay * i;
+                            //})
+                            .attr("width", function (d, i) {
+                                if (d.contractStartDate !== "" && d.contractEndDate === "") return barsizeNonEndCon;
+                                if (d.contractEndDate === "") return 0;
+                                return x(new Date(d.contractEndDate)) - x(new Date(d.contractStartDate));
+                            }).style("fill", function (d) {
+                                if (d.contractStartDate !== "" && d.contractEndDate === "")
+                                    return "url(#gradient-contract-start)";
+                            });
+                        //************************************************
+
+                        //progress
+                        chart.append("g").attr("clip-path", "url(#chart-area)")
+                            .selectAll("rect.prog")
+                            .data(projects)
+                            .enter()
+                            .append("rect")
+                            .attr("class", "prog")
+                            .attr("transform", function (d, i) { return "translate(0," + y(d.name) + ")"; })
+                            .attr("x", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                if (d.contractEndDate === "") return 0;
+                                return x(new Date(d.contractStartDate));
+                            })
+                            .attr("width", 0)
+                            .style("fill", "url(#gradient-progress)")
+                            .attr("height", y.rangeBand())
+                        ;
+                        chart.selectAll("g rect.prog")
+                            .transition()
+                            .duration(duration)
+                            .delay(function (d, i) {
+                                return delay * i;
+                            })
+                            .attr("width", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                if (d.contractEndDate === "") return 0;
+                                var max = x(new Date(d.contractEndDate)) - x(new Date(d.contractStartDate));
+                                var xProgress = d3.scale.linear()
+                                    .domain([0, 100])
+                                    .range([0, max]);
+                                return xProgress(d.progress);
+                            });
+
+                        //war
+                        chart.append("g").attr("clip-path", "url(#chart-area)")
+                            .selectAll("rect.dev").data(projects)
+                            .enter().append("rect")
+                            .attr("class", "dev")
+                            .attr("transform", function (d, i) { return "translate(0," + y(d.name) + ")"; })
+                            .attr("x", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                if (d.contractEndDate === "") return 0;
+                                if (d.warrantyEndDate === "") return 0;
+                                return x(new Date(d.contractEndDate));
+                            })
+                            .attr("width", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                if (d.contractEndDate === "") return 0;
+                                if (d.warrantyEndDate === "") return 0;
+                                return x(new Date(d.warrantyEndDate)) - x(new Date(d.contractEndDate));
+                            })
+                            .attr("height", y.rangeBand())
+                        ;
+
+                        //text progress
+                        var textProgressMarging = (y.rangeBand() / 10) + 1;
+                        chart.append("g").attr("clip-path", "url(#chart-area)")
+                            .selectAll("text.prog")
+                            .data(projects)
+                            .enter()
+                            .append("text")
+                            .attr("class", "prog")
+                            .attr("transform", function (d, i) { return "translate(0," + y(d.name) + ")"; })
+                            .attr("x", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                return x(new Date(d.contractStartDate)) + textProgressMarging;
+                            })
+                            .attr("y", y.rangeBand() - textProgressMarging)
+                            .text(function (d) {
+                                if (d.contractEndDate === "") return "";
+                                return d.progress + "%";
+                            })
+                        ;
+                        chart.selectAll("g text.prog")
+                            .transition()
+                            .duration(duration)
+                            .delay(function (d, i) {
+                                return delay * i;
+                            })
+                            .attr("x", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                if (d.contractEndDate === "") return 0;
+                                var max = x(new Date(d.contractEndDate)) - x(new Date(d.contractStartDate));
+                                var xProgress = d3.scale.linear()
+                                    .domain([0, 100])
+                                    .range([0, max]);
+                                return x(new Date(d.contractStartDate)) + textProgressMarging + xProgress(d.progress);
+                            })
+                            .each("end", function () {
+                                svg.call(zoom);
+                            });
+
+                        function update() {
+                            chart.selectAll("g rect.con")
+                            .attr("class", "con")
+                            .attr("x", function (d, i) {
+                                return x(new Date(d.startDate));
+                            })
+                            ;
+
+                            chart.selectAll("g rect.war")
+                            .attr("class", "war")
+                            .attr("x", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                return x(new Date(d.contractStartDate));
+                            });
+
+                            chart.selectAll("g rect.prog")
+                            .attr("class", "prog")
+                            .attr("x", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                return x(new Date(d.contractStartDate));
+                            });
+
+                            chart.selectAll("g text.prog")
+                            .attr("x", function (d, i) {
+                                if (d.contractStartDate === "") return 0;
+                                if (d.contractEndDate === "") return 0;
+                                var max = x(new Date(d.contractEndDate)) - x(new Date(d.contractStartDate));
+                                var xProgress = d3.scale.linear()
+                                    .domain([0, 100])
+                                    .range([0, max]);
+                                var margin = xProgress(d.progress) / 4;
+                                return x(new Date(d.contractStartDate)) + textProgressMarging + xProgress(d.progress);
+                            })
+                            ;
+
+                            chart.selectAll("g rect.dev")
+                            .attr("class", "dev")
+                            .attr("x", function (d, i) {
+                                if (d.contractEndDate === "") return 0;
+                                return x(new Date(d.contractEndDate));
+                            });
+                        }
+
+                        var yChart = d3.scale.ordinal()
+                            .domain([0, 1])
+                            .range([0, height]);
+
+                        //console.log("@ViewBag.ToDay");
+                        var toDay = new Date("@ViewBag.ToDay");
+
+                        chart.append("line").attr("clip-path", "url(#chart-area)")
+                                .attr("class", "today-line")
+                                .attr("x1", x(toDay))
+                                .attr("y1", 0)
+                                .attr("x2", x(toDay))
+                                .attr("y2", yChart(1));
+                        chart.append("text").attr("clip-path", "url(#chart-area)")
+                            .attr("class", "today-text")
+                                .text("ToDay: " + format(toDay))
+                                .attr("x", x(toDay) + 5)
+                                .attr("y", yChart(1) - 5);
+
+                        //add legend
+                        var legendRectSize = 18;
+                        var legendSpacing = 4;
+
+                        var colors = d3.scale.quantize()
+                            .range(["steelblue", "green", "lightpink"]);
+
+                        var phases = [
+                            { name: "Presale", color: "steelblue" },
+                            { name: "Implement", color: "green" },
+                            { name: "Warranty", color: "lightpink" }
+                        ];
+                        var legend = chart.selectAll(".legend")
+                            .data(phases)
+                          .enter().append("g")
+                            .attr("class", "legend")
+                            .attr("transform", function (d, i) { return "translate(-60," + i * 20 + ")"; });
+
+                        legend.append("rect")
+                        .attr("x", width - 11)
+                        .attr("y", margin.top - 5)
+                        .attr("width", 10)
+                        .attr("height", 10)
+                        .style("fill", function (d) { return d.color; })
+                        .style("stroke", "grey");
+
+                        legend.append("text")
+                            .attr("x", width - 13)
+                            .attr("y", margin.top)
+                            .attr("dy", ".35em")
+                            .style("text-anchor", "end")
+                            .text(function (d) { return d.name; });
+
+                        //    var legend = d3.select('#legend')
+                        //                    .append('ul')
+                        //                    .attr('class', 'list-inline');
+
+                        //    var keys = legend.selectAll('li.key')
+                        //        .data(colors.range());
+
+                        //    keys.enter()
+                        //        .append('li')
+                        //        .attr('class', 'key')
+                        //        .style('border-top-color', String)
+                        //        .text(function (d) {
+                        //            if (d === "steelblue") return "Presale";
+                        //            if (d === "green") return "Implement";
+                        //            if (d === "lightpink") return "Warranty";
+                        //            return "";
+                        //        });
+                        //}
+                    }
+                });
+            }
 
         });
-    </script>
+</script>
 }

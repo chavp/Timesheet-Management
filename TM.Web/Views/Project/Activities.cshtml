@@ -1,0 +1,573 @@
+﻿@{
+    ViewBag.Title = "Project Activities";
+}
+
+@Html.Partial("_Template", new PJ_CWN019.TM.Web.Models.TemplateView
+{
+    MainPanelID = "projectActivitiesPanel",
+    MainIcon = PJ_CWN019.TM.Web.Models.ConstPage.ProjectManagementIcon,
+    MainTitle = "Projects",
+    SubIcon = PJ_CWN019.TM.Web.Models.ConstPage.ProjectActivitiesIcon,
+    SubTitle = "Activities"
+})
+
+
+@section scripts{
+<script>
+
+    paramsView.urlGetAllPhase = "@Url.Content("~/Project/GetPhases")";
+    paramsView.urlGetAllTaskType = "@Url.Content("~/Project/GetTaskTypes")";
+    paramsView.urlGetMainTask = "@Url.Content("~/Project/GetMainTasks")";
+    paramsView.urlReadProjectRole = "@Url.Content("~/Project/GetProjectRoles")";
+
+    paramsView.urlSavePhase = "@Url.Content("~/Project/SavePhase")";
+    paramsView.urlDeletePhase = "@Url.Content("~/Project/DeletePhase")";
+
+    paramsView.urlSaveTaskType = "@Url.Content("~/Project/SaveTaskType")";
+    paramsView.urlDeleteTaskType = "@Url.Content("~/Project/DeleteTaskType")";
+
+    paramsView.urlSaveMainTask = "@Url.Content("~/Project/SaveMainTask")";
+    paramsView.urlDeleteMainTask = "@Url.Content("~/Project/DeleteMainTask")";
+
+    paramsView.urlSaveProjectRole = "@Url.Content("~/Project/SaveProjectRole")";
+    paramsView.urlDeleteProjectRole = "@Url.Content("~/Project/DeleteProjectRole")";
+
+    Ext.Loader.setPath('Ext.ux', '@Url.Content("~/Scripts/ext-4.2.1-gpl/ux")');
+    Ext.require([
+            'Ext.ux.grid.FiltersFeature'
+    ]);
+
+    Ext.onReady(function () {
+        Ext.QuickTips.init();
+
+        // configure whether filter query is encoded or not (initially)
+        var encode = false;
+
+        // configure whether filtering is performed locally or remotely (initially)
+        var local = true;
+
+        var filters = {
+            ftype: 'filters',
+            // encode and local configuration options defined previously for easier reuse
+            encode: encode, // json encode the filter query
+            local: local,   // defaults to false (remote filtering)
+
+            // Filters are most naturally placed in the column definition, but can also be
+            // added here.
+            filters: [
+                {
+                    type: 'boolean',
+                    dataIndex: 'visible'
+                }
+            ]
+        };
+
+        var phaseStore = Ext.create("widget.phaseStore");
+        phaseStore.load({
+            pageSize: 99999,
+            url: paramsView.urlGetAllPhase
+        });
+
+        var tasktypeStore = Ext.create("widget.tasktypeStore");
+        tasktypeStore.load({
+            pageSize: 99999,
+            url: paramsView.urlGetAllTaskType
+        });
+
+        var maintaskStore = Ext.create("widget.maintaskStore");
+        maintaskStore.load({
+            pageSize: 99999,
+            url: paramsView.urlGetMainTask
+        });
+
+        var projectRoleStore = Ext.create("widget.projectRoleStore");
+        projectRoleStore.load({
+            pageSize: 99999,
+            url: paramsView.urlReadProjectRole
+        });
+
+        Ext.create('widget.panel', {
+            renderTo: 'projectActivitiesPanel',
+            layout: { type: 'border', padding: 1 },
+            height: WindowHeight.height,
+            width: 'auto',
+            //border: 1,
+            frame: false,
+            bodyBorder: false,
+            defaults: {
+                collapsible: true,
+                frame: false,
+                split: true
+            },
+            items: [
+                {
+                    region: "west",
+                    width: 300,
+                    minWidth: 150,
+                    maxWidth: 700,
+                    xtype: "panel",
+                    title: TextLabel.projectPhaseTabTitle,
+                    layout: { type: 'border', padding: 1 },
+                    items: [
+                        {
+                            region: "center",
+                            xtype: "grid",
+                            store: phaseStore,
+                            features: [filters],
+                            columns: {
+                                items: [
+                                    {
+                                        xtype: 'rownumberer',
+                                        width: 30,
+                                        locked: true,
+                                        hidden: false
+                                    },
+                                    { text: 'ID', dataIndex: 'ID', hidden: true },
+                                    {
+                                        xtype: 'actioncolumn',
+                                        width: 30,
+                                        sortable: false,
+                                        menuDisabled: true,
+                                        items: [{
+                                            iconCls: 'edit-icon',
+                                            tooltip: TextLabel.editProjectPhaseText,
+                                            scope: this,
+                                            handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                                grid.getSelectionModel().select(record);
+
+                                                var editWin = Ext.create("widget.projectphasewindow",
+                                                {
+                                                    title: TextLabel.editProjectPhaseTitle,
+                                                    iconCls: 'edit-icon',
+                                                    animateTarget: row,
+                                                    modal: true,
+                                                    editData: record,
+                                                    phaseStore: phaseStore
+                                                });
+
+                                                editWin.setValues(record);
+                                                editWin.show();
+                                            }
+                                        }]
+                                    },
+                                    { text: TextLabel.orderColumnText, dataIndex: 'Order', width: 50 },
+                                    {
+                                        text: TextLabel.projectPhaseColumnText, dataIndex: 'Name', flex: 1,
+                                        menuDisabled: false,
+                                        filter: {
+                                            type: 'string'
+                                            // specify disabled to disable the filter menu
+                                            //, disabled: true
+                                        }
+                                    },
+                                    {
+                                        xtype: 'actioncolumn',
+                                        width: 30,
+                                        items: [{
+                                            iconCls: 'delete-icon',
+                                            tooltip: TextLabel.deleteProjectPhaseText,
+                                            isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                                if (record.get('TimesheetCount') > 0) return true;
+                                                return false;
+                                            },
+                                            handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                                grid.getSelectionModel().select(record);
+                                                CommandActionBuilder.deleteData(record.data.ID, paramsView.urlDeletePhase, phaseStore);
+                                            }
+                                        }]
+                                    }
+                                ],
+                                defaults: {
+                                    sortable: false,
+                                    menuDisabled: true,
+                                    renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                                        if (value) {
+                                            value = Ext.String.htmlEncode(value);
+                                            // "double-encode" before adding it as a data-qtip attribute
+                                            metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+                                        }
+                                        return value;
+                                    }
+                                }
+                            },
+                            tbar: [{
+                                cls: 'btn',
+                                xtype: 'button',
+                                iconCls: 'glyphicon glyphicon-plus',
+                                text: TextLabel.addProjectPhaseText,
+                                handler: function (btn, evt) {
+                                    var newWin = Ext.create("widget.projectphasewindow",
+                                    {
+                                        title: TextLabel.addProjectPhaseTitle,
+                                        animateTarget: btn,
+                                        modal: true,
+                                        order: phaseStore.count() + 1,
+                                        phaseStore: phaseStore
+                                    });
+                                    newWin.show();
+                                }
+                            }]
+                            // paging bar on the bottom
+                            //,bbar: Ext.create('Ext.PagingToolbar', {
+                            //    store: phaseStore,
+                            //    displayInfo: true,
+                            //    displayMsg: 'Project Phase ที่กำลังแสดงอยู่ {0} - {1} of {2}',
+                            //    emptyMsg: "ไม่มี Project Phase"
+                            //})
+                        }
+                    ]
+                },
+                {
+                    region: "center",
+                    collapsible: false,
+                    defaults: {
+                        collapsible: true,
+                        frame: false,
+                        split: true
+                    },
+                    layout: { type: 'border', padding: 1 },
+                    split: false,
+                    items: [
+                        {
+                            region: "north",
+                            xtype: "panel",
+                            height: 220,
+                            maxHeight: 400,
+                            title: TextLabel.projectTaskTypeTabTitle,
+                            layout: { type: 'border', padding: 1 },
+                            items: [
+                                {
+                                    region: "center",
+                                    xtype: "grid",
+                                    store: tasktypeStore,
+                                    features: [filters],
+                                    columns: {
+                                        items: [
+                                            {
+                                                xtype: 'rownumberer',
+                                                width: 30,
+                                                locked: true,
+                                                hidden: false
+                                            },
+                                            { text: 'ID', dataIndex: 'ID', hidden: true },
+                                            {
+                                                xtype: 'actioncolumn',
+                                                width: 30,
+                                                sortable: false,
+                                                menuDisabled: true,
+                                                items: [{
+                                                    iconCls: 'edit-icon',
+                                                    tooltip: TextLabel.editTaskTypeText,
+                                                    scope: this,
+                                                    handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                                        grid.getSelectionModel().select(record);
+
+                                                        var editWin = Ext.create("widget.tasktypewindow",
+                                                        {
+                                                            title: TextLabel.editTaskTypeTitle,
+                                                            iconCls: 'edit-icon',
+                                                            animateTarget: row,
+                                                            modal: true,
+                                                            editData: record,
+                                                            tasktypeStore: tasktypeStore
+                                                        });
+
+                                                        editWin.setValues(record);
+                                                        editWin.show();
+                                                    }
+                                                }]
+                                            },
+                                            { text: TextLabel.orderColumnText, dataIndex: 'Order', width: 50 },
+                                            {
+                                                text: TextLabel.taskTypeColumnText, dataIndex: 'Name', flex: 1,
+                                                menuDisabled: false,
+                                                filter: {
+                                                    type: 'string'
+                                                    // specify disabled to disable the filter menu
+                                                    //, disabled: true
+                                                }
+                                            },
+                                            {
+                                                xtype: 'actioncolumn',
+                                                width: 30,
+                                                items: [{
+                                                    iconCls: 'delete-icon',
+                                                    tooltip: TextLabel.deleteTaskTypeText,
+                                                    isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                                        if (record.get('TimesheetCount') > 0) return true;
+                                                        return false;
+                                                    },
+                                                    handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                                        grid.getSelectionModel().select(record);
+                                                        CommandActionBuilder.deleteData(record.data.ID, paramsView.urlDeleteTaskType, tasktypeStore);
+                                                    }
+                                                }]
+                                            }
+                                        ],
+                                        defaults: {
+                                            sortable: false,
+                                            menuDisabled: true,
+                                            renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                                                if (value) {
+                                                    value = Ext.String.htmlEncode(value);
+                                                    // "double-encode" before adding it as a data-qtip attribute
+                                                    metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+                                                }
+                                                return value;
+                                            }
+                                        }
+                                    },
+                                    tbar: [{
+                                        cls: 'btn',
+                                        xtype: 'button',
+                                        iconCls: 'glyphicon glyphicon-plus',
+                                        text: TextLabel.addTaskTypeText,
+                                        handler: function (btn, evt) {
+                                            var newWin = Ext.create("widget.tasktypewindow",
+                                            {
+                                                title: TextLabel.addTaskTypeTitle,
+                                                animateTarget: btn,
+                                                modal: true,
+                                                order: tasktypeStore.count() + 1,
+                                                tasktypeStore: tasktypeStore
+                                            });
+                                            newWin.show();
+                                        }
+                                    }]
+                                    // paging bar on the bottom
+                                    //,bbar: Ext.create('Ext.PagingToolbar', {
+                                    //    store: tasktypeStore,
+                                    //    displayInfo: true,
+                                    //    displayMsg: 'Task Type ที่กำลังแสดงอยู่ {0} - {1} of {2}',
+                                    //    emptyMsg: "ไม่มี Task Type"
+                                    //})
+                                }
+                            ]
+                        },
+                        {
+                            region: "center",
+                            xtype: "panel",
+                            collapsible: false,
+                            title: TextLabel.projectMainTaskTabTitle,
+                            layout: { type: 'border', padding: 1 },
+                            items: [
+                                {
+                                    region: "center",
+                                    xtype: "grid",
+                                    store: maintaskStore,
+                                    features: [filters],
+                                    columns: {
+                                        items: [
+                                            {
+                                                xtype: 'rownumberer',
+                                                width: 30,
+                                                locked: true,
+                                                hidden: false
+                                            },
+                                            { text: 'ID', dataIndex: 'ID', hidden: true },
+                                            {
+                                                xtype: 'actioncolumn',
+                                                width: 30,
+                                                sortable: false,
+                                                menuDisabled: true,
+                                                items: [{
+                                                    iconCls: 'edit-icon',
+                                                    tooltip: TextLabel.editMainTaskText,
+                                                    scope: this,
+                                                    handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                                        grid.getSelectionModel().select(record);
+
+                                                        var editWin = Ext.create("widget.maintaskwindow",
+                                                        {
+                                                            title: TextLabel.editMainTaskTitle,
+                                                            iconCls: 'edit-icon',
+                                                            animateTarget: row,
+                                                            modal: true,
+                                                            editData: record,
+                                                            maintaskStore: maintaskStore
+                                                        });
+
+                                                        editWin.setValues(record);
+                                                        editWin.show();
+                                                    }
+                                                }]
+                                            },
+                                            {
+                                                text: TextLabel.mainTaskColumnText, dataIndex: 'Name', flex: 1,
+                                                menuDisabled: false,
+                                                filter: {
+                                                    type: 'string'
+                                                    // specify disabled to disable the filter menu
+                                                    //, disabled: true
+                                                }
+                                            },
+                                            {
+                                                xtype: 'actioncolumn',
+                                                width: 30,
+                                                items: [{
+                                                    iconCls: 'delete-icon',
+                                                    tooltip: TextLabel.deleteMainTaskText,
+                                                    handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                                        grid.getSelectionModel().select(record);
+                                                        CommandActionBuilder.deleteData(record.data.ID, paramsView.urlDeleteMainTask, maintaskStore);
+                                                    }
+                                                }]
+                                            }
+                                        ],
+                                        defaults: {
+                                            sortable: false,
+                                            menuDisabled: true,
+                                            renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                                                if (value) {
+                                                    value = Ext.String.htmlEncode(value);
+                                                    // "double-encode" before adding it as a data-qtip attribute
+                                                    metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+                                                }
+                                                return value;
+                                            }
+                                        }
+                                    },
+                                    tbar: [{
+                                        cls: 'btn',
+                                        xtype: 'button',
+                                        iconCls: 'glyphicon glyphicon-plus',
+                                        text: TextLabel.addMainTaskText,
+                                        handler: function (btn, evt) {
+                                            var newWin = Ext.create("widget.maintaskwindow",
+                                            {
+                                                title: TextLabel.addMainTaskTitle,
+                                                animateTarget: btn,
+                                                modal: true,
+                                                maintaskStore: maintaskStore
+                                            });
+                                            newWin.show();
+                                        }
+                                    }]
+                                    // paging bar on the bottom
+                                    //,bbar: Ext.create('Ext.PagingToolbar', {
+                                    //    store: tasktypeStore,
+                                    //    displayInfo: true,
+                                    //    displayMsg: 'Task Type ที่กำลังแสดงอยู่ {0} - {1} of {2}',
+                                    //    emptyMsg: "ไม่มี Task Type"
+                                    //})
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    region: "east",
+                    width: 400,
+                    minWidth: 200,
+                    maxWidth: 700,
+                    xtype: "panel",
+                    title: TextLabel.projectProjectRoleTabTitle,
+                    layout: { type: 'border', padding: 1 },
+                    items: [
+                        {
+                            region: "center",
+                            xtype: "grid",
+                            store: projectRoleStore,
+                            features: [filters],
+                            columns: {
+                                items: [
+                                    {
+                                        xtype: 'rownumberer',
+                                        width: 30,
+                                        locked: true,
+                                        hidden: false
+                                    },
+                                    { text: 'ID', dataIndex: 'ProjectRoleID', hidden: true },
+                                    {
+                                        xtype: 'actioncolumn',
+                                        width: 30,
+                                        sortable: false,
+                                        menuDisabled: true,
+                                        items: [{
+                                            iconCls: 'edit-icon',
+                                            tooltip: TextLabel.editProjectRoleText,
+                                            scope: this,
+                                            handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                                grid.getSelectionModel().select(record);
+
+                                                var editWin = Ext.create("widget.projectrolewindow",
+                                                {
+                                                    title: TextLabel.editProjectRoleTitle,
+                                                    iconCls: 'edit-icon',
+                                                    animateTarget: row,
+                                                    modal: true,
+                                                    editData: record,
+                                                    projectRoleStore: projectRoleStore
+                                                });
+
+                                                editWin.setValues(record);
+                                                editWin.show();
+                                            }
+                                        }]
+                                    },
+                                    { text: TextLabel.orderColumnText, dataIndex: 'Order', width: 50 },
+                                    {
+                                        text: TextLabel.projectRoleColumnText, dataIndex: 'ProjectRoleName', flex: 2,
+                                        menuDisabled: false,
+                                        filter: {
+                                            type: 'string'
+                                            // specify disabled to disable the filter menu
+                                            //, disabled: true
+                                        }
+                                    },
+                                    {
+                                        text: TextLabel.projectRoleCostColumnText,
+                                        dataIndex: 'ProjectRoleCost',
+                                        flex: 1,
+                                        align: 'right',
+                                        renderer: function (value, metadata, record, rowIndex, colIndex, store) {
+                                            metadata.attr = "style='color: #aaa';";
+                                            if (value == 0)
+                                                return null;
+                                            return Ext.util.Format.number(value, '0,000');//'0,000.00'
+                                        }
+                                    },
+                                    {
+                                        xtype: 'actioncolumn',
+                                        width: 30,
+                                        items: [{
+                                            iconCls: 'delete-icon',
+                                            tooltip: TextLabel.deleteProjectRoleText,
+                                            isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                                if (record.get('ProjectMemberCount') > 0) return true;
+                                                if (record.get('TimesheetCount') > 0) return true;
+                                                return false;
+                                            },
+                                            handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                                grid.getSelectionModel().select(record);
+                                                CommandActionBuilder.deleteData(record.data.ProjectRoleID, paramsView.urlDeleteProjectRole, projectRoleStore);
+                                            }
+                                        }]
+                                    }
+                                ]
+                            },
+                            tbar: [{
+                                cls: 'btn',
+                                xtype: 'button',
+                                iconCls: 'glyphicon glyphicon-plus',
+                                text: TextLabel.addProjectRoleText,
+                                handler: function (btn, evt) {
+                                    var newWin = Ext.create("widget.projectrolewindow",
+                                    {
+                                        title: TextLabel.addProjectRoleTitle,
+                                        animateTarget: btn,
+                                        modal: true,
+                                        order: projectRoleStore.count() + 1,
+                                        projectRoleStore: projectRoleStore
+                                    });
+                                    newWin.show();
+                                }
+                            }]
+                        }
+                    ]
+                }
+            ]
+        });
+    });
+</script>
+}

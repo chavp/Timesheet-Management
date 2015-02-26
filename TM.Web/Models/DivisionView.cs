@@ -9,5 +9,7 @@ namespace PJ_CWN019.TM.Web.Models
     {
         public long ID { get; set; }
         public string Name { get; set; }
+
+        public int DepartmentCount { get; set; }
     }
 }

@@ -24,8 +24,9 @@ namespace Cwn.PM.FluentMapping.Mappings
             Map(x => x.ActualHourUsed, "HOUR_USED").CustomSqlType("NUMERIC(7, 4)");
             Map(x => x.Remark, "REMARK");
             Map(x => x.MainTask, "MAIN_TASK_DESC").Not.Nullable();
-            Map(x => x.SubTask, "SUB_TASK_DESC");
-            
+            Map(x => x.SubTask, "SUB_TASK_DESC").CustomSqlType("NVARCHAR(MAX)");
+            Map(x => x.IsOT, "OT_FLAG");
+
             References(x => x.Project, "PJ_ID").Not.Nullable();
             References(x => x.ProjectRole, "PJ_ROLE_ID").Not.Nullable();
             References(x => x.User, "AUT_ID").Not.Nullable();

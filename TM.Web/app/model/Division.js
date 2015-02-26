@@ -3,6 +3,7 @@
     xtype: 'division',
     fields: [
         { name: 'ID', type: 'int' },
-        { name: 'Name' }
+        { name: 'Name' },
+        { name: 'DepartmentCount', type: 'int' }
     ]
 });

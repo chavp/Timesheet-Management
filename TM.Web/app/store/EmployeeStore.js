@@ -3,7 +3,7 @@
     alias: 'widget.employeeStore',
     model: 'TM.model.Employee',
     autoLoad: false,
-    pageSize: 100,
+    pageSize: 15,
 
     proxy: {
         type: 'ajax',
@@ -15,7 +15,8 @@
             employeeID: null,
             employeeFirstName: null,
             employeeLastName: null,
-            withoutEmpIDList: []
+            withoutEmpIDList: [],
+            projectCode: null
         },
         timeout: 120000,
         reader: {

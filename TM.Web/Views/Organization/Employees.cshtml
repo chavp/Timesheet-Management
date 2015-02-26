@@ -1,0 +1,247 @@
+﻿@{
+    ViewBag.Title = "Organization / Employees";
+}
+
+@Html.Partial("_Template", new PJ_CWN019.TM.Web.Models.TemplateView
+{
+    MainPanelID = "employeesPanel",
+    MainIcon = "glyphicon glyphicon-tower",
+    MainTitle = "Organization",
+    SubIcon = "glyphicon glyphicon-user",
+    SubTitle = "Employees"
+})
+
+@section scripts{
+    <script>
+        Ext.Loader.setPath('Ext.ux', '@Url.Content("~/Scripts/ext-4.2.1-gpl/ux")');
+
+        Ext.require(['Ext.ux.form.SearchField']);
+
+        paramsView.urlReadEmployee = '@Url.Content("~/Organization/SearchEmployees")';
+        paramsView.urlGetTitleName = '@Url.Content("~/Organization/GetTitleName")';
+        paramsView.urlGetPosition = '@Url.Content("~/Organization/GetPosition")';
+        paramsView.urlReadDivision = '@Url.Content("~/Organization/GetDivision")';
+        paramsView.urlReadDepartment = '@Url.Content("~/Organization/GetDepartment")';
+        paramsView.urlCheckDuplicatedEmployeeID = '@Url.Content("~/Organization/CheckDuplicatedEmployeeID")';
+        paramsView.urlSaveEmployee = '@Url.Content("~/Organization/SaveEmployee")';
+        paramsView.urlDeleteEmployee = '@Url.Content("~/Organization/DeleteEmployee")';
+
+        Ext.onReady(function () {
+            var employeeStore = Ext.create('widget.employeeStore', {
+                pageSize: 15
+            });
+
+            employeeStore.load({
+                url: paramsView.urlReadEmployee
+            });
+
+
+            var titleNameStore = Ext.create('widget.titleNameStore');
+            titleNameStore.load({
+                url: paramsView.urlGetTitleName
+            });
+
+            var positionStore = Ext.create('widget.positionStore');
+            positionStore.load({
+                url: paramsView.urlGetPosition
+            });
+
+            var divisionStore = Ext.create('widget.divisionStore', {
+                pageSize: 9999
+            });
+            divisionStore.load({
+                url: paramsView.urlReadDivision
+            });
+
+            var departmentStore = Ext.create('widget.departmentStore', {
+                pageSize: 9999
+            });
+            departmentStore.load({
+                url: paramsView.urlReadDepartment
+            });
+
+            var onEditClick = function (grid, rowIndex, colIndex, item, event, record, row) {
+                grid.getSelectionModel().select(record);
+                var editForm = Ext.create('widget.userWindow', {
+                    title: 'แก้ไขข้อมูลพนักงาน / Edit Employee',
+                    iconCls: 'edit-employee-icon',
+                    animateTarget: row,
+                    modal: true,
+                    employeeStore: employeeStore,
+                    editData: record,
+
+                    titleNameStore: titleNameStore,
+                    positionStore: positionStore,
+                    divisionStore: divisionStore,
+                    departmentStore: departmentStore
+                });
+
+                editForm.setValues(record);
+                editForm.show();
+            }
+
+            Ext.create('Ext.panel.Panel', {
+                layout: 'border',
+                renderTo: 'employeesPanel',
+                height: 560,
+                border: 1,
+                defaults: {
+                    frame: false,
+                    split: false
+                },
+                items: [{
+                    xtype: 'panel',
+                    id: 'searchEmpForm',
+                    title: '',
+                    region: 'north',
+                    items: [{
+                        width: 400,
+                        fieldLabel: 'ค้นหา / Search',
+                        labelWidth: 100,
+                        xtype: 'searchfield',
+                        margin: 10,
+                        emptyText: 'รหัส / ชื่อ-นามสกุล ',
+                        store: employeeStore
+                    }]
+                }, {
+                    xtype: 'grid',
+                    region: 'center',
+                    store: employeeStore,
+                    renderTo: 'employeesPanel',
+                    columns: [
+                        {
+                            xtype: 'rownumberer',
+                            width: 30,
+                            sortable: false,
+                            locked: true
+                        },
+                        {
+                            xtype: 'actioncolumn',
+                            width: 30,
+                            sortable: false,
+                            menuDisabled: true,
+                            items: [{
+                                iconCls: 'edit-employee-icon',
+                                tooltip: 'แก้ไขข้อมูลพนักงาน / Edit Employee',
+                                scope: this,
+                                handler: onEditClick
+                            }]
+                        },
+                        { text: 'ID', dataIndex: 'ID', hidden: true, sortable: false },
+                        { text: 'รหัส<br/>Emp ID', dataIndex: 'EmployeeID', sortable: false, width: 90 },
+                        { text: 'ชื่อ-นามสกุล<br/>Full Name', dataIndex: 'FullName', sortable: false, width: 180 },
+                        { text: 'อีเมล์<br/>Email', dataIndex: 'Email', sortable: false, width: 180 },
+                        { text: 'ตำแหน่ง<br/>Position', dataIndex: 'Position', sortable: false, flex: 4 },
+                        { text: 'ฝ่าย<br/>Division', dataIndex: 'Division', sortable: false, width: 70 },
+                        { text: 'แผนก<br/>Department', dataIndex: 'Department', sortable: false, width: 180 },
+                        {
+                            text: 'สถานะ<br/>Status', dataIndex: 'Status', sortable: false, width: 70, align: 'center',
+                            renderer: function (value, metadata, record, rowIndex, colIndex, store) {
+                                var status = record.get('Status');
+
+                                if (status === 'Work') {
+                                    metadata.style = "background-color:#99FF99;";
+                                } else {
+                                    metadata.style = "background-color:#FFCCCC;";
+                                }
+                                return value;
+                            }
+                        },
+                        {
+                            xtype: 'actioncolumn',
+                            sortable: false,
+                            menuDisabled: true,
+                            flex: 1,
+                            items: [{
+                                iconCls: 'delete-employee-icon',
+                                tooltip: 'ลบข้อมูลพนักงาน / Delete Employee',
+                                scope: this,
+                                isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                    if (record.get('TotalTimesheet') > 0) return true;
+                                    return false;
+                                },
+                                handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                    grid.getSelectionModel().select(record);
+
+                                    Ext.MessageBox.confirm('ยืนยัน', 'คุณต้องการลบข้อมูลนี้ใช่ หรือ ไม่?',
+                                    function (btn) {
+                                        if (btn === "yes") {
+                                            Ext.MessageBox.wait("กำลังลบข้อมูล...", 'กรุณารอ');
+                                            var employeeID = record.data.EmployeeID;
+
+                                            Ext.Ajax.request({
+                                                url: paramsView.urlDeleteEmployee,
+                                                success: function (transport) {
+                                                    Ext.MessageBox.hide();
+                                                    var respose = Ext.decode(transport.responseText);
+                                                    if (respose.success) {
+                                                        Ext.MessageBox.show({
+                                                            title: messagesForm.successTitle,
+                                                            msg: respose.message,
+                                                            //width: 300,
+                                                            buttons: Ext.MessageBox.OK,
+                                                            icon: Ext.MessageBox.INFO,
+                                                            fn: function (btn) {
+                                                                employeeStore.load();
+                                                            }
+                                                        });
+
+                                                    } else {
+                                                        Ext.MessageBox.show({
+                                                            title: messagesForm.errorAlertTitle,
+                                                            msg: respose.message,
+                                                            //width: 300,
+                                                            buttons: Ext.MessageBox.OK,
+                                                            icon: Ext.MessageBox.ERROR
+                                                        });
+                                                    }
+                                                },
+                                                failure: function (transport) {
+                                                    Ext.MessageBox.show({
+                                                        title: messagesForm.errorAlertTitle,
+                                                        msg: "เกิดข้อผิดพลาดในการลบพนักงาน " + transport.responseText,
+                                                        //width: 300,
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.MessageBox.ERROR
+                                                    });
+                                                },
+                                                jsonData: { employeeID: employeeID }
+                                            });
+                                        }
+                                    });
+                                }
+                            }]
+                        }
+                    ],
+                    tbar: [{
+                        cls: 'btn',
+                        xtype: 'button',
+                        iconCls: 'glyphicon glyphicon-plus',
+                        text: "เพิ่มพนักงาน / Add Employee",
+                        handler: function (btn, evt) {
+                            var addForm = Ext.create('widget.userWindow', {
+                                title: '<i class="glyphicon glyphicon-plus"></i> เพิ่มพนักงาน / Add Employee',
+                                animateTarget: btn,
+                                modal: true,
+                                employeeStore: employeeStore,
+                                titleNameStore: titleNameStore,
+                                positionStore: positionStore,
+                                divisionStore: divisionStore,
+                                departmentStore: departmentStore
+                            });
+                            addForm.show();
+                        }
+                    }],
+                    // paging bar on the bottom
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: employeeStore,
+                        displayInfo: true,
+                        displayMsg: 'Employee ที่กำลังแสดงอยู่ {0} - {1} of {2}',
+                        emptyMsg: "ไม่มี Employee"
+                    })
+                }]
+            });
+        });
+    </script>
+    
+}

@@ -5,7 +5,7 @@
     title: 'แก้ไขผู้รับผิดชอบ / Edit Member',
     resizable: false,
     closable: false,
-
+    constrain: true,
     config: {
         projectData: null,
         departmentStore: null,
@@ -15,16 +15,13 @@
     initComponent: function () {
         var me = this;
 
-        //Project / Project Member :  PJ-RVP013(PVR Service Pool)
-        //me.title += ": " + me.projectData.data.Code;
         me.projectCode = me.projectData.data.Code;
         var project = me.projectData.data.Code + "(" + me.projectData.data.Name + ")";
 
-        var projectRoleStore = Ext.create('widget.projectRoleStore',
-            {
-                autoLoad: true
-            });
-
+        var projectRoleStore = Ext.create('widget.projectRoleStore');
+        projectRoleStore.load({
+            url: paramsView.urlReadProjectRole
+        });
         var memberStore = Ext.create('widget.projectMemberStore', {
             pageSize: 11,
             listeners: {
@@ -36,6 +33,7 @@
         });
         memberStore.proxy.extraParams.projectCode = me.projectCode;
         memberStore.load({
+            url: paramsView.urlReadProjectMember,
             callback: function (records, operation, success) {
                 if (success) {
                    
@@ -149,7 +147,7 @@
                                         //{ hidden: false, text: '*', dataIndex: 'CanEditProjectRole', width: 50 },
                                         //{ hidden: false, text: '-', dataIndex: 'CanRemove', width: 50 },
                                         { xtype: 'rownumberer', width: 35, sortable: false, locked: true },
-                                        { text: 'ID', dataIndex: 'ID', flex: 1, hidden: true },
+                                        { text: 'ID', dataIndex: 'ID', flex: 1, hidden: true, sortable: false },
                                         {
                                             text: 'หน้าที่ในโครงการ<br/>Project Role',
                                             dataIndex: 'ProjectRoleName',
@@ -174,9 +172,9 @@
                                                 return value;
                                             }
                                         },
-                                        { text: 'รหัส<br/>Emp ID', dataIndex: 'EmployeeID', width: 100 },
-                                        { text: 'ชื่อ-นามสกุล<br/>Name', dataIndex: 'FullName', width: 180 },
-                                        { text: 'ตำแหน่ง<br/>Position', dataIndex: 'Position', flex: 1 }
+                                        { text: 'รหัส<br/>Emp ID', dataIndex: 'EmployeeID', width: 100, sortable: true },
+                                        { text: 'ชื่อ-นามสกุล<br/>Name', dataIndex: 'FullName', width: 180, sortable: true },
+                                        { text: 'ตำแหน่ง<br/>Position', dataIndex: 'Position', flex: 1, sortable: true }
                                     ],
                                     buttonAlign: 'center',
                                     buttons: [
@@ -268,6 +266,7 @@
                     ]
                 }
             ],
+            buttonAlign: 'center',
             buttons: [new Ext.button.Button(cancleAction)]
         }];
 

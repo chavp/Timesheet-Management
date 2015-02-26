@@ -1,0 +1,199 @@
+﻿@{
+    ViewBag.Title = "Project Progress";
+}
+
+@Html.Partial("_Template", new PJ_CWN019.TM.Web.Models.TemplateView
+    {
+        MainPanelID = "projectProgressPanel",
+        SubIcon = "glyphicon glyphicon-th-list",
+        SubTitle = "Project Progress",
+        MainIcon = PJ_CWN019.TM.Web.Models.ConstPage.ProjectManagementIcon,
+        MainTitle = PJ_CWN019.TM.Web.Models.ConstPage.ProjectManagementTitle,
+    })
+
+@section scripts{
+    <script>
+        paramsView.maxDateText = '@ViewBag.MaxDate';
+        paramsView.urlReadProject = '@Url.Content("~/Project/FindProject")';
+        paramsView.urlFindProjectProgressUpdateLog = '@Url.Content("~/Project/FindProjectProgressUpdateLog")';
+
+        Ext.onReady(function () {
+            var projectStore = Ext.create('widget.projectStore', {
+                pageSize: 11
+            });
+            projectStore.load({ url: paramsView.urlReadProject });
+
+            var searchProject = function (form) {
+                var inputSearch = Ext.getCmp('searchProjectProgressForm');
+                if (inputSearch.isValid()) {
+
+                    var values = inputSearch.getValues();
+                    var projectCode = values.ProjectCode;
+                    var projectName = values.ProjectName;
+                    projectStore.currentPage = 1;
+                    projectStore.proxy.extraParams.projectCode = projectCode;
+                    projectStore.proxy.extraParams.projectName = projectName;
+                    projectStore.load({
+                        callback: function (records, operation, success) {
+                            if (success) {
+
+                            }
+                        }
+                    });
+
+                }
+            }
+
+            var searchProjectFieldset = {
+                xtype: 'fieldset',
+                title: '<h5>' + TextLabel.searchCriterionLabel + '</h5>',
+                border: false,
+                defaultType: 'field',
+                defaults: {
+                    labelWidth: 150,
+                    anchor: '-20 -20',
+                    allowBlank: false,
+                    labelAlign: 'right'
+                },
+                bodyPadding: 10,
+                items: [
+                    {
+                        xtype: 'fieldcontainer',
+                        fieldLabel: TextLabel.projectLabel,
+                        name: 'project',
+                        layout: 'hbox',
+                        bodyPadding: 5,
+                        defaults: {
+                            labelWidth: 50,
+                            allowBlank: true
+                        },
+                        items: [{
+                            xtype: 'textfield',
+                            itemId: 'ProjectCode',
+                            name: 'ProjectCode',
+                            fieldLabel: '',
+                            emptyText: TextLabel.codeLabel,
+                            flex: 1,
+                            maxLength: 30,
+                            listeners: {
+                                change: function (obj, newValue) {
+                                    //console.log(newValue);
+                                    obj.setRawValue(newValue.toUpperCase());
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            itemId: 'ProjectName',
+                            name: 'ProjectName',
+                            fieldLabel: '',
+                            emptyText: TextLabel.nameLabel,
+                            maxLength: 255,
+                            flex: 3
+                        }]
+                    }
+                ]
+            };
+
+            Ext.create('Ext.panel.Panel', {
+                layout: 'border',
+                renderTo: 'projectProgressPanel',
+                width: 'auto',
+                height: 540,
+                border: 1,
+                defaults: {
+                    frame: false,
+                    split: false
+                },
+                items: [
+                    {
+                        xtype: 'form',
+                        id: 'searchProjectProgressForm',
+                        title: '',
+                        region: 'north',
+                        bodyPadding: "0 20 0 20",
+                        collapsible: false,
+                        items: [searchProjectFieldset],
+                        buttonAlign: 'center',
+                        border: 0,
+                        buttons: [
+                            {
+                                text: TextLabel.cmdSearchText,
+                                handler: function (btn) {
+                                    var form = btn.up('form').getForm();
+                                    searchProject(form);
+                                }
+                            }, {
+                                text: TextLabel.cmdClearText,
+                                handler: function (btn) {
+                                    var form = btn.up('form').getForm();
+                                    form.reset();
+                                    searchProject(form);
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        xtype: 'gridpanel',
+                        itemId: 'gridProject',
+                        frame: false,
+                        title: '',
+                        region: 'center',
+                        store: projectStore,
+                        columns: {
+                            items: [
+                                { xtype: 'rownumberer', width: 30 },
+                                { text: 'ID', dataIndex: 'ID', hidden: true },
+                                { text: TextLabel.projectCodeColumnText, dataIndex: 'Code', width: 150 },
+                                { text: TextLabel.projectNameColumnText, dataIndex: 'Name', flex: 1 },
+                                { text: TextLabel.projectProgressColumnText, dataIndex: 'Progress', width: 180, align: 'center' },
+                                {
+                                    xtype: 'actioncolumn', width: 30,
+                                    items: [{
+                                        xtype: 'button',
+                                        getTip: function (v, meta, rec) {
+                                            return 'แก้ไขโปรเกรซ / Edit Progress';
+                                        },
+                                        getClass: function (v, meta, rec) {
+                                            return 'edit-project-icon';
+                                        },
+                                        handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                            grid.getSelectionModel().select(record);
+
+                                            var editForm = Ext.create('widget.projectUpdateProgressWindow', {
+                                                iconCls: 'edit-project-icon',
+                                                editData: record,
+                                                animateTarget: row,
+                                                projectStore: projectStore,
+                                                modal: true
+                                            });
+
+                                            editForm.setValues(record);
+                                            editForm.show();
+                                        }
+                                    }]
+                                }
+                            ],
+                            defaults: {
+                                sortable: false,
+                                menuDisabled: true,
+                                renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                                    if (value) {
+                                        value = Ext.String.htmlEncode(value);
+                                        metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+                                    }
+                                    return value;
+                                }
+                            }
+                        },
+                        bbar: Ext.create('Ext.PagingToolbar', {
+                            store: projectStore,
+                            displayInfo: true,
+                            displayMsg: 'Projects ที่กำลังแสดงอยู่ {0} - {1} of {2}',
+                            emptyMsg: "ไม่มี Projects"
+                        })
+                    }
+                ]
+            });
+        });
+    </script>
+}

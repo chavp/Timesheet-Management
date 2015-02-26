@@ -8,6 +8,8 @@ namespace PJ_CWN019.TM.Web.Models
     public class PhaseView
     {
         public long ID { get; set; }
+        public int Order { get; set; }
         public string Name { get; set; }
+        public long TimesheetCount { get; set; }
     }
 }

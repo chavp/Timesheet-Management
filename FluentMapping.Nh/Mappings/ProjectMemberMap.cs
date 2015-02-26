@@ -18,6 +18,7 @@ namespace Cwn.PM.FluentMapping.Mappings
 
             References(x => x.Project, "PJ_ID").Not.Nullable().UniqueKey("KEY_PROJECT_MEMBER");
             References(x => x.User, "AUT_ID").Not.Nullable().UniqueKey("KEY_PROJECT_MEMBER");
+
             References(x => x.ProjectRole, "PJ_ROLE_ID").Not.Nullable();
 
             MapVersion();

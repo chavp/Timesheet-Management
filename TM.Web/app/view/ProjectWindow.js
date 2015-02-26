@@ -5,7 +5,7 @@
     title: 'เพิ่มผู้รับผิดชอบ / Add Member',
     resizable: false,
     closable: false,
-
+    constrain: true,
     config: {
         projectData: null,
         departmentStore: null,
@@ -23,7 +23,8 @@
         var errorLoadEmployee = "เกิดข้อผิดพลาดในการค้นข้อมูล Employee";
 
         var employeeStore = Ext.create('widget.employeeStore', {
-            pageSize: 6
+            pageSize: 50,
+            url: paramsView.urlReadEmployee
         });
         me.employeeStore = employeeStore;
         employeeStore.reset();
@@ -49,6 +50,7 @@
                 employeeStore.proxy.extraParams.employeeID = employeeID;
                 employeeStore.proxy.extraParams.employeeFirstName = firstName;
                 employeeStore.proxy.extraParams.employeeLastName = lastName;
+                employeeStore.proxy.extraParams.projectCode = me.projectCode;
 
                 //var listOfProjectMemberList = [];
                 //memberStore.each(function (rec) {
@@ -56,32 +58,37 @@
                 //});
                 //employeeStore.proxy.extraParams.withoutEmpIDList = listOfProjectMemberList;
                 me.setWithoutEmpIDList();
+                if (employeeStore.proxy.extraParams.withoutEmpIDList.length <= paramsConst.limitMember) {
+                    employeeStore.load({
+                        url: paramsView.urlReadEmployee,
+                        callback: function (records, operation, success) {
+                            if (success) {
 
-                employeeStore.load({
-                    callback: function (records, operation, success) {
-                        if (success) {
-
-                        } else {
-                            //Ext.MessageBox.show({
-                            //    title: messagesForm.errorAlertTitle,
-                            //    msg: errorLoadEmployee,
-                            //    //width: 300,
-                            //    buttons: Ext.MessageBox.OK,
-                            //    icon: Ext.MessageBox.ERROR
-                            //});
+                            } else {
+                                //Ext.MessageBox.show({
+                                //    title: messagesForm.errorAlertTitle,
+                                //    msg: errorLoadEmployee,
+                                //    //width: 300,
+                                //    buttons: Ext.MessageBox.OK,
+                                //    icon: Ext.MessageBox.ERROR
+                                //});
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         };
 
-        var projectRoleStore = Ext.create('widget.projectRoleStore', 
-            {
-                autoLoad: true
-            });
+        me.searchEmployeeAction = searchEmployeeAction;
+
+        var projectRoleStore = Ext.create('widget.projectRoleStore');
+        //console.log(paramsView.urlReadProjectRole);
+        projectRoleStore.load({
+            url: paramsView.urlReadProjectRole
+        });
 
         var memberStore = Ext.create('widget.projectMemberStore', {
-            //pageSize: 10,
+            pageSize: 9999,
             listeners: {
                 datachanged: function (st, eOpts) {
                     //me.projectData.set("Members", memberStore.data.length);
@@ -90,33 +97,7 @@
             }
         });
         memberStore.proxy.extraParams.projectCode = me.projectCode;
-        memberStore.load({
-            callback: function (records, operation, success) {
-                if (success) {
-                    searchEmployeeAction();
-                } else {
-                    //Ext.MessageBox.show({
-                    //    title: messagesForm.errorAlertTitle,
-                    //    msg: 'เกิดข้อผิดพลาดในการค้นข้อมูล Project Member',
-                    //    //width: 300,
-                    //    buttons: Ext.MessageBox.OK,
-                    //    icon: Ext.MessageBox.ERROR
-                    //});
-                }
-            }
-        });
         me.memberStore = memberStore;
-
-        //employeeStore.load({
-        //    callback: function (records, operation, success) {
-        //        if (success) {
-
-        //        } else {
-        //            //console.log('error');
-        //            Ext.MessageBox.alert('Error', errorLoadEmployee);
-        //        }
-        //    }
-        //});
 
         var searchEmployeeFieldset = {
             xtype: 'fieldset',
@@ -209,9 +190,10 @@
                         flex: 1,
                         maxLength: 50,
                         listeners: {
-                            change: function (obj, newValue) {
-                                //console.log(newValue);
-                                //obj.setRawValue(newValue.toUpperCase());
+                            specialkey: function (field, e) {
+                                if (e.getKey() == e.ENTER) {
+                                    searchEmployeeAction();
+                                }
                             }
                         }
                     }, {
@@ -221,7 +203,14 @@
                         fieldLabel: '',
                         emptyText: 'ชื่อ / Name',
                         maxLength: 255,
-                        flex: 2
+                        flex: 2,
+                        listeners: {
+                            specialkey: function (field, e) {
+                                if (e.getKey() == e.ENTER) {
+                                    searchEmployeeAction();
+                                }
+                            }
+                        }
                     },
                     {
                         xtype: 'textfield',
@@ -230,7 +219,14 @@
                         fieldLabel: '',
                         emptyText: 'นามสกุล / Last Name',
                         maxLength: 255,
-                        flex: 3
+                        flex: 3,
+                        listeners: {
+                            specialkey: function (field, e) {
+                                if (e.getKey() == e.ENTER) {
+                                    searchEmployeeAction();
+                                }
+                            }
+                        }
                     }]
                 }
             ]
@@ -238,7 +234,7 @@
 
         var cancleAction = Ext.create('Ext.Action', {
             //iconCls: 'add-button',
-            text: '<i class="glyphicon glyphicon-remove"></i> ปิด / Close',
+            text: messagesForm.closeActionText,
             disabled: false,
             handler: function (widget, event) {
                 var modifiedRecords = me.memberStore.getModifiedRecords();
@@ -342,10 +338,10 @@
                                     store: employeeStore,
                                     columns: [
                                         { xtype: 'rownumberer', width: 35, sortable: false, locked: true },
-                                        { text: 'ID', dataIndex: 'ID', flex: 1, hidden: true },
-                                        { text: 'รหัส<br/>Emp ID', dataIndex: 'EmployeeID', width: 100 },
-                                        { text: 'ชื่อ-นามสกุล<br/>Name', dataIndex: 'FullName', width: 160 },
-                                        { text: 'ตำแหน่ง<br/>Position', dataIndex: 'Position', width: 200 }
+                                        { text: 'ID', dataIndex: 'ID', flex: 1, hidden: true, sortable: false },
+                                        { text: 'รหัส<br/>Emp ID', dataIndex: 'EmployeeID', sortable: true, width: 100 },
+                                        { text: 'ชื่อ-นามสกุล<br/>Name', dataIndex: 'FullName', sortable: true, width: 160 },
+                                        { text: 'ตำแหน่ง<br/>Position', dataIndex: 'Position', sortable: true, width: 200 }
                                     ],
                                     // paging bar on the bottom
                                     bbar: Ext.create('Ext.PagingToolbar', {
@@ -382,7 +378,7 @@
                                             text: '>',
                                             disabled: true,
                                             handler: function (btn) {
-
+                                                var gridProjectMember = Ext.getCmp('gridProjectMember');
                                                 var gridEmployee = Ext.getCmp('gridEmployee');
                                                 var selected = gridEmployee.getSelectionModel().getSelection();
                                                 if (selected.length > 0) {
@@ -404,7 +400,8 @@
                                                         newPM.commit();
                                                         newPM.set('ProjectRoleName', null);
 
-                                                        memberStore.add(newPM);
+                                                        memberStore.insert(0, newPM);
+                                                        gridProjectMember.getView().refresh();
                                                     }
                                                     
                                                     searchEmployeeAction();
@@ -528,7 +525,7 @@
                                     columns: [
                                         //{ hidden: false, text: '*', dataIndex: 'CanEditProjectRole', width: 50 },
                                         //{ hidden: false, text: '-', dataIndex: 'CanRemove', width: 50 },
-                                        {xtype: 'rownumberer', width: 35, sortable: false, locked: true },
+                                        //{xtype: 'rownumberer', width: 35, sortable: false, locked: true },
                                         {
                                             xtype: 'rownumberer', width: 20, sortable: false, locked: true,
                                             renderer: function (value, metaData, record, rowIndex, colIndex, store, view) {
@@ -541,7 +538,7 @@
                                                 return value;
                                             }
                                         },
-                                        { text: 'ID', dataIndex: 'ID', flex: 1, hidden: true },
+                                        { text: 'ID', dataIndex: 'ID', flex: 1, hidden: true, sortable: false },
                                         {
                                             text: 'หน้าที่ในโครงการ<br/>Project Role',
                                             dataIndex: 'ProjectRoleName',
@@ -564,17 +561,28 @@
                                                     metaData.css = 'cellediting';
                                                 }
                                                 return value;
-                                            }
+                                            }, sortable: true
                                         },
-                                        { text: 'รหัส<br/>Emp ID', dataIndex: 'EmployeeID', width: 100 },
-                                        { text: 'ชื่อ-นามสกุล<br/>Name', dataIndex: 'FullName', width: 160 },
-                                        { text: 'ตำแหน่ง<br/>Position', dataIndex: 'Position', width: 200 }
+                                        { text: 'รหัส<br/>Emp ID', dataIndex: 'EmployeeID', sortable: true, width: 100 },
+                                        { text: 'ชื่อ-นามสกุล<br/>Name', dataIndex: 'FullName', sortable: true, width: 160 },
+                                        { text: 'ตำแหน่ง<br/>Position', dataIndex: 'Position', sortable: true, width: 200 }
                                     ],
                                     buttonAlign: 'center',
                                     buttons: [
                                         {
                                             text: '<i class="glyphicon glyphicon-floppy-disk"></i> บันทึก / Save',
                                             handler: function (btn) {
+                                                if (memberStore.count() > paramsConst.limitMember) {
+                                                    Ext.MessageBox.show({
+                                                        title: messagesForm.errorAlertTitle,
+                                                        msg: 'กรุณากำหนดสมาชิกในโครงการไม่เกิน ' + paramsConst.limitMember + ' ท่าน',
+                                                        //width: 300,
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.MessageBox.ERROR
+                                                    });
+                                                    return false;
+                                                }
+
                                                 var modifiedRecords = memberStore.getModifiedRecords();
                                                 for (var i = 0; i < modifiedRecords.length; i++) {
                                                     var modified = modifiedRecords[i];
@@ -670,7 +678,7 @@
                     ]
                 }
             ],
-            //buttonAlign: 'center',
+            buttonAlign: 'center',
             buttons: [new Ext.button.Button(cancleAction)]
         }];
 
@@ -681,7 +689,9 @@
         var self = this;
         var listOfProjectMemberList = [];
         self.memberStore.each(function (rec) {
-            listOfProjectMemberList.push(rec.data.EmployeeID);
+            if (rec.data.ID === null || rec.data.ID === '') {
+                listOfProjectMemberList.push(rec.data.EmployeeID);
+            }
         });
         self.employeeStore.proxy.extraParams.withoutEmpIDList = listOfProjectMemberList;
     },
@@ -697,13 +707,6 @@
             cmbDepartment.setReadOnly(true);
         }
     },
-
-    //refreshEmployeeResult: function () {
-    //    var self = this;
-    //    self.setWithoutEmpIDList();
-    //    self.employeeStore.currentPage = 1;
-    //    self.employeeStore.load();
-    //},
 
     refreshMemberStore: function (callback) {
         var self = this;
@@ -727,5 +730,27 @@
                 }
             }
         });
+    },
+
+    listeners: {
+        show: function (w, opt) {
+            this.searchEmployeeAction();
+            this.memberStore.load({
+                url: paramsView.urlReadProjectMember,
+                callback: function (records, operation, success) {
+                    if (success) {
+                        //searchEmployeeAction();
+                    } else {
+                        //Ext.MessageBox.show({
+                        //    title: messagesForm.errorAlertTitle,
+                        //    msg: 'เกิดข้อผิดพลาดในการค้นข้อมูล Project Member',
+                        //    //width: 300,
+                        //    buttons: Ext.MessageBox.OK,
+                        //    icon: Ext.MessageBox.ERROR
+                        //});
+                    }
+                }
+            });
+        }
     }
 });

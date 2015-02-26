@@ -1,48 +1,78 @@
 ﻿@{
     ViewBag.AppRoleTitle = "";
 
-    var rolesDisplayeList = Roles.GetRolesForUser();
-
-
-    if (HttpContext.Current.IsDebuggingEnabled)
+    List<string> rolesDisplayeList = null;
+    if (Request.IsAuthenticated)
     {
-        ViewBag.AppRoleTitle = "[ " + string.Join(" / ", rolesDisplayeList).Replace("ProjectOwner", "PM") + " ]";
+        if (HttpContext.Current.IsDebuggingEnabled)
+        {
+            rolesDisplayeList = new List<string>( Roles.GetRolesForUser() );
+            //ViewBag.AppRoleTitle = "[ " + string.Join(" / ", rolesDisplayeList).Replace("ProjectOwner", "PM") + " ]";
+        }
+
+        var member = Membership.GetUser();
+        if(member != null){
+            ViewBag.PositionName = ((PJ_CWN019.TM.Web.Models.Providers.CwnMembershipUser)member).PositionName;
+            ViewBag.UserName = ((PJ_CWN019.TM.Web.Models.Providers.CwnMembershipUser)member).UserName;
+            ViewBag.LastLoginDate = member.LastLoginDate.ToString("dd/MM/yyyy HH:mm:ss");
+        }else{
+            WebSecurity.Logout();
+        }
     }
-    
-    if (Request.IsAuthenticated){
-        ViewBag.PositionName = ((PJ_CWN019.TM.Web.Models.Providers.CwnMembershipUser)Membership.GetUser()).PositionName;
-    }
+
+    ViewBag.PaddingTop = "55px";
+
+    bool _manageOrganizationFeature = true;
+}
+
+@helper DisplayLogin(int paddingTop)
+{
+     if (Request.IsAuthenticated)
+     {
+        <span style="vertical-align: top; color: Black;"><i class="glyphicon glyphicon-user"></i>:&nbsp;@ViewBag.UserName</span>
+        <span style="vertical-align: top; color: Black;">|<strong>&nbsp;Position</strong>:&nbsp;@ViewBag.PositionName</span>
+        <span style="vertical-align: top; color: Black;">|<strong>&nbsp;Last&nbsp;Login</strong>:&nbsp;@ViewBag.LastLoginDate</span>
+        <button class="btn btn-xs btn-info" id="cmdChangePassword" title="เปลี่ยน Password"><i class="glyphicon glyphicon-lock"></i>&nbsp;Change Password</button>
+         using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { @class = "log-off", id = "logOffForm" }))
+         {
+            @Html.AntiForgeryToken()
+            <a href="javascript:document.getElementById('logOffForm').submit()" class="btn btn-xs btn-danger"><i class="glyphicon glyphicon-log-out"></i>&nbsp;Logout</a> @ViewBag.AppRoleTitle
+         }
+        <span style="padding-left: 5px;"></span>
+         ViewBag.PaddingTop = paddingTop + "px";
+     }
 }
 
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="X-UA-Compatible" content="IE=10">
     <meta name="viewport" content="width=device-width" />
     <title>@ViewBag.Title</title>
     <link rel="shortcut icon" href="@Url.Content("~/Content/Images/favicon_cwn.png")" />
+    <link href='@Url.Content("~/Scripts/bootstrap-3.3.2/dist/css/bootstrap.css")' rel="stylesheet" />
 
-@*    @Styles.Render("~/Content/themes/base/css")*@
-    @Styles.Render("~/Content/bootstrap")
     @Styles.Render("~/Content/css/extjs")
     @Styles.Render("~/Content/css")
 
-@*    @Styles.Render("~/Content/themes/jqGrid.bootstrap/css")*@
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/extjs")
+    @Scripts.Render("~/bundles/bootstrap")
     @Scripts.Render("~/bundles/modernizr")
-
     
+    @RenderSection("styles", required: false)
 </head>
 
 <body>
-
+    @Html.AntiForgeryToken()
     <div id="header">
         <div class="topr">
             <div class="logoleft">
                 <img src="@Url.Content("~/Content/Images/logo_cwn.png")" />
             </div>
         </div>
-        @if(Request.IsAuthenticated){
+        
             <div class="logoright">
                 <table border="0">
                     <tr>
@@ -50,25 +80,12 @@
                             <table border="0">
                                 <tr>
                                     <td>
-                                        <span style="vertical-align: top; color: Black;"><i class="glyphicon glyphicon-user"></i>:&nbsp;@Membership.GetUser().UserName</span>
-                                        <span style="vertical-align: top; color: Black;">|<strong>&nbsp;Position</strong>:&nbsp;@ViewBag.PositionName</span>
-                                        <span style="vertical-align: top; color: Black;">|<strong>&nbsp;Last&nbsp;Login</strong>:&nbsp;@Membership.GetUser().LastLoginDate.ToString("dd/MM/yyyy HH:mm:ss")</span>
-                                        <button class="btn btn-xs btn-info" id="cmdChangePassword" title="เปลี่ยน Password"><i class="glyphicon glyphicon-lock"></i>&nbsp;Change Password</button>
-                                        @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { @class = "log-off", id = "logOffForm" }))
-                                        {
-                                            @Html.AntiForgeryToken()
-                                            <a href="javascript:document.getElementById('logOffForm').submit()" class="btn btn-xs btn-danger"><i class="glyphicon glyphicon-log-out"></i>&nbsp;Logout</a> @ViewBag.AppRoleTitle
-                                        }
-                                        <span style="padding-left: 5px;"></span>
+                                        @DisplayLogin(14)
                                     </td>
                                 </tr>
                                 <tr class="trValignBaseline">
-                                    <td class="trAlignRight" style="padding-top: 16px;">
-                                        <table border="0">
-                                            <tr class="trValignBaseline">
-                                                <td style="padding-left: 16px;"></td>
-                                            </tr>
-                                        </table>
+                                    <td class="trAlignRight" style="padding-top: @ViewBag.PaddingTop; float: right;">
+                                        <span style="color:#AC7C01;">*พบปัญหาการใช้งาน ติดต่อ Service Desk โทร 02-697-0999  ภายใน 1999 หรือ <a href="mailto:servicedeskcwn@chanwanich.com" target="_top">servicedeskcwn@chanwanich.com</a></span>
                                     </td>
                                 </tr>
                             </table>
@@ -78,7 +95,7 @@
                     </tr>
                 </table>
             </div>
-        }
+        
     </div>
 
     <div class="navbar navbar-default navbar-static-top" role="navigation">
@@ -96,32 +113,62 @@
                 <div class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
                         <li><a href="@Url.Content("~/Home/Index")"><i class="glyphicon glyphicon-home"></i>&nbsp;Home</a></li>
-                        @*<li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="timesheet"><i class="glyphicon glyphicon-time"></i>&nbsp;Timesheet<span class="caret"></span></a>
-                            <ul class="dropdown-menu" aria-labelledby="timesheet">
-                                <li><a href="@Url.Content("~/Timesheet/Timesheet")"><i class="glyphicon glyphicon-time"></i>&nbsp;Timesheet</a></li>
-                            </ul>
-                        </li>*@
-                        @if (Roles.IsUserInRole("Manager") || Roles.IsUserInRole("Admin"))
+                            @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
+                            {
+                                @*<li class="dropdown">
+                                    <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-tower"></i>&nbsp;Organization<span class="caret"></span></a>
+                                    <ul class="dropdown-menu" aria-labelledby="timesheet">
+                                        <li><a href="@Url.Content("~/Organization/Employees")"><i class="glyphicon glyphicon-user"></i>&nbsp;Employees</a></li>
+                                        <li><a href="@Url.Content("~/Organization/ProjectPortfolio")"><i class="glyphicon glyphicon-gift"></i>&nbsp;Project Portfolio</a></li>
+                                    </ul>
+                                </li>*@
+
+                                <li class="dropdown">
+                                    <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-usd"></i>&nbsp;Project Portfolio<span class="caret"></span></a>
+                                    <ul class="dropdown-menu" aria-labelledby="timesheet">
+                                        <li><a href="@Url.Content("~/Organization/ProjectPortfolio")"><i class="glyphicon glyphicon-gift"></i>&nbsp;Dashboard</a></li>
+                                    </ul>
+                                </li>
+                                
+                                <li><a href="@Url.Content("~/Organization/Structure")"><i class="glyphicon glyphicon-tower"></i>&nbsp;Organization</a></li>
+                                <li><a href="@Url.Content("~/CustomerRelationship/Management")"><i class="glyphicon glyphicon-link"></i>&nbsp;Customer Relationship</a></li>
+                            }
+                    
+                        @if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager) 
+                            || Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
                         {
-                            <li><a href="@Url.Content("~/Project/Search")"><i class="glyphicon glyphicon-th-large"></i>&nbsp;Project</a></li>
+                            if(_manageOrganizationFeature){
+                                <li class="dropdown">
+                                    <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="@PJ_CWN019.TM.Web.Models.ConstPage.ProjectManagementIcon"></i>&nbsp;@PJ_CWN019.TM.Web.Models.ConstPage.ProjectManagementTitle<span class="caret"></span></a>
+                                    <ul class="dropdown-menu" aria-labelledby="timesheet">
+                                        <li><a href="@Url.Content("~/Project/Search")"><i class="@PJ_CWN019.TM.Web.Models.ConstPage.ProjectIcon"></i>&nbsp;@PJ_CWN019.TM.Web.Models.ConstPage.ProjectTitle</a></li>
+                                        <li><a href="@Url.Content("~/Project/Activities")"><i class="@PJ_CWN019.TM.Web.Models.ConstPage.ProjectActivitiesIcon"></i>&nbsp;@PJ_CWN019.TM.Web.Models.ConstPage.ProjectActivitiesTitle</a></li>
+    @*<li><a href="@Url.Content("~/Project/ProjectProgress")"><i class="@PJ_CWN019.TM.Web.Models.ConstPage.ProjectProgressIcon"></i>&nbsp;@PJ_CWN019.TM.Web.Models.ConstPage.ProjectProgressTitle</a></li>*@
+                                    </ul>
+                                </li>
+                            }
+                            else
+                            {
+                                <li><a href="@Url.Content("~/Project/Search")"><i class="glyphicon glyphicon-th-large"></i>&nbsp;Project</a></li>
+                            }
                         }
 
-                        @if (Roles.IsUserInRole("Member")
-                            && Roles.IsUserInRole("ProjectOwner")
-                            && !Roles.IsUserInRole("Executive")
-                            && !Roles.IsUserInRole("Manager")
-                            && !Roles.IsUserInRole("Admin"))
+                        @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Member)
+                            && rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner)
+                            && !rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Executive)
+                            && !rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager)
+                            && !rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
                         {
                             <li><a href="@Url.Content("~/Project/SearchReadOnly")"><i class="glyphicon glyphicon-th-large"></i>&nbsp;Project</a></li>
                         }
 
-                        @if (Roles.IsUserInRole("Member") )
+                        @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Member))
                         {
                             <li><a href="@Url.Content("~/Timesheet/Timesheet")"><i class="glyphicon glyphicon-time"></i>&nbsp;Timesheet</a></li>
                         }
                         
-                        @if (Roles.IsUserInRole("Executive") || Roles.IsUserInRole("Admin"))
+                        @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Executive)
+                            || rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
                         {
                             <li><a href="@Url.Content("~/ProjectPortfolio/Report")"><i class="glyphicon glyphicon-file"></i>&nbsp;Report</a></li>
                         }
@@ -130,31 +177,63 @@
                             <li><a href="@Url.Content("~/Timesheet/Report")"><i class="glyphicon glyphicon-file"></i>&nbsp;Report</a></li>
                         }
 
-                        @if (Roles.IsUserInRole("Support"))
+                        @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Support))
                         {
                             <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-cog"></i>&nbsp;Support<span class="caret"></span></a>
+                                <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-cog"></i>&nbsp;Support<span class="caret"></span></a>
+                                <ul class="dropdown-menu" aria-labelledby="timesheet">
+                                    <li><a href="@Url.Content("~/Support/Employees")"><i class="glyphicon glyphicon-user"></i>&nbsp;Reset Password</a></li>
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-book"></i>&nbsp;Help<span class="caret"></span></a>
                             <ul class="dropdown-menu" aria-labelledby="timesheet">
-                                <li><a href="@Url.Content("~/Support/Employees")"><i class="glyphicon glyphicon-user"></i>&nbsp;Reset Password</a></li>
+                                <li><a href="@Url.Content("~/UserManual/CWN_Timesheet_System_Overview.pdf")" target="_blank"><i class="glyphicon glyphicon-file"></i>&nbsp;System Overview</a></li>
+
+                                @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Member)
+                                    && !rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin)
+                                    && !rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager)
+                                    && !rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner)
+                                    && !rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Executive)
+                                    && !rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Support))
+                                {
+                                    <li><a href="@Url.Content("~/UserManual/CWN_Timesheet_User Manual_for_Member.pdf")" target="_blank"><i class="glyphicon glyphicon-file"></i>&nbsp;Member Manual</a></li>
+                                }
+                                @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
+                                {
+                                    <li><a href="@Url.Content("~/UserManual/CWN_Timesheet_User Manual_for_Admin.pdf")" target="_blank"><i class="glyphicon glyphicon-file"></i>&nbsp;Admin Manual</a></li>
+                                }
+                                @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager))
+                                {
+                                    <li><a href="@Url.Content("~/UserManual/CWN_Timesheet_User Manual_for_Manager.pdf")" target="_blank"><i class="glyphicon glyphicon-file"></i>&nbsp;Manager Manual</a></li>
+                                }
+                                @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
+                                {
+                                    <li><a href="@Url.Content("~/UserManual/CWN_Timesheet_User Manual_for_PM.pdf")" target="_blank"><i class="glyphicon glyphicon-file"></i>&nbsp;Project Manager Manual</a></li>
+                                }
+                                @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Executive))
+                                {
+                                    <li><a href="@Url.Content("~/UserManual/CWN_Timesheet_User Manual_for_Executive.pdf")" target="_blank"><i class="glyphicon glyphicon-file"></i>&nbsp;Executive Manual</a></li>
+                                }
+                                @if (rolesDisplayeList.Contains(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Support))
+                                {
+                                    <li><a href="@Url.Content("~/UserManual/CWN_Timesheet_User Manual_for_Support.pdf")" target="_blank"><i class="glyphicon glyphicon-file"></i>&nbsp;Support Manual</a></li>
+                                }
                             </ul>
                         </li>
-                        }
                     </ul>
                 </div>
             }
         </div>
     </div>
 
+    
     @RenderBody()
-   
-    @Html.Partial("_Footer")
 
-    @Scripts.Render("~/bundles/jquery")
-    @Scripts.Render("~/bundles/extjs")
-    @*@Scripts.Render("~/bundles/jqueryval")
-    @Scripts.Render("~/bundles/jqueryui")
-    @Scripts.Render("~/bundles/jqGrid.bootstrap")*@
-    @Scripts.Render("~/bundles/bootstrap")
+    @Html.Partial("_Footer")
 
     @if (Request.IsAuthenticated)
     {
@@ -179,19 +258,6 @@
                     var offset = $(self).offset();
                     popup.showAt(offset.left - popup.width + $cmdChangePassword.width() + 10, offset.top);
                     //popup.show();
-                });
-
-                $('#cmdFeedback').click(function (e) {
-                    e.preventDefault();
-                    var self = this;
-
-                    var popup = Ext.create('TM.view.FeedbackWindow', {
-                        animateTarget: self,
-                        modal: true
-                    });
-
-                    popup.setMessageFocus();
-                    popup.show();
                 });
             });
         </script>

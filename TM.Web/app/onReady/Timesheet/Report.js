@@ -1,7 +1,8 @@
 ﻿Ext.onReady(function () {
 
-    var timesheetReportStore = Ext.create('widget.timesheetreportStore');
-    timesheetReportStore.load();
+    var timesheetReportStore = Ext.create('widget.timesheetreportStore', {
+        autoLoad: true
+    });
 
     var searchReportsItems = [];
 
@@ -18,7 +19,7 @@
         fieldLabel: 'โครงการ / Project',
         store: projectStore,
         emptyText: 'กรุณาระบุข้อมูล',
-        padding: "0 100 0 0",
+        padding: "0 0 0 0",
         //maxLength: 30,
         hideTrigger: false,
         displayField: 'Display',
@@ -28,7 +29,8 @@
         allowBlank: false,
         disabled: true,
         editable: true,
-        forceSelection: true
+        forceSelection: true,
+        listConfig: { itemTpl: highlightMatch.createItemTpl('Display', 'ProjectCode') }
     };
 
     var empStore = Ext.create('widget.employeeStore');
@@ -49,7 +51,8 @@
         allowBlank: false,
         disabled: true,
         editable: true,
-        forceSelection: true
+        forceSelection: true,
+        listConfig: { itemTpl: highlightMatch.createItemTpl('Display', 'EmployeeID') }
     };
 
     //cmbProjectCode.isVisible(false);
@@ -60,7 +63,7 @@
         xtype: 'combo',
         id: 'Name',
         name: 'Name',
-        padding: "0 180 0 0",
+        padding: "0 300 0 0",
         store: timesheetReportStore,
         fieldLabel: 'ชื่อรายงาน / Report Name',
         displayField: 'Name',
@@ -85,12 +88,15 @@
                             Ext.getCmp('ProjectCode').setDisabled(true);
                             Ext.getCmp('EmployeeID').setDisabled(false);
                         }
-                        empStore.load();
+                        empStore.load({
+                            url: paramsView.urlReadEmployee
+                        });
                     } else if (newValue === 2) { // Actual Effort for Department
                         Ext.getCmp('ProjectCode').setDisabled(false);
                         Ext.getCmp('EmployeeID').setDisabled(true);
                         projectStore.proxy.extraParams.isForDepartment = true;
                         projectStore.load({
+                            url: paramsView.urlReadProject,
                             callback: function (records, operation, success) {
                                 if (success) {
                                     Ext.getCmp('ProjectCode').setValue("");
@@ -101,14 +107,21 @@
                         Ext.getCmp('ProjectCode').setDisabled(true);
                         Ext.getCmp('EmployeeID').setDisabled(false);
                         empStore.proxy.extraParams.isOwner = true;
-                        empStore.load();
+                        empStore.load({
+                            url: paramsView.urlReadEmployee
+                        });
                     } else if (newValue === 4) { // Actual Cost for Project
                         Ext.getCmp('ProjectCode').setDisabled(false);
                         Ext.getCmp('EmployeeID').setDisabled(true);
                         projectStore.proxy.extraParams.isOwner = true;
-                        projectStore.load();
+                        projectStore.load({
+                            url: paramsView.urlReadProject
+                        });
                     }
                     else if (newValue === 5) { // Actual Cost for All Person
+
+                    }
+                    else if (newValue === 6) { // Timesheet Data Recording
 
                     }
                 }
@@ -163,7 +176,7 @@
     });
     searchReportsItems.push({
         xtype: 'fieldcontainer',
-        fieldLabel: 'ช่วงวันที่ / Date (วันแรก - วันสุดท้าย ของเดือนปัจจุบัน)',
+        fieldLabel: 'ช่วงวันที่ / Date (วันแรก - วันนี้ ของเดือนปัจจุบัน)',
         name: 'dateBetween',
         layout: 'hbox',
         defaults: {
@@ -175,18 +188,22 @@
             name: 'fromStartTimesheet',
             anchor: '100%',
             fieldLabel: '',
-            flex: 1,
+            width: 100,
             format: 'd/m/Y',
             editable: false,
             vtype: 'daterange',
             endDateField: 'toStartTimesheet'
+        }, {
+            xtype: 'displayfield',
+            margin: '0 5 0 5',
+            value: '-'
         }, {
             xtype: 'datefield',
             id: 'toStartTimesheet',
             name: 'toStartTimesheet',
             anchor: '100%',
             fieldLabel: '',
-            flex: 1,
+            width: 100,
             format: 'd/m/Y',
             padding: "0 250 0 0",
             editable: false,
@@ -199,6 +216,9 @@
     var setDefault = function () {
         Ext.getCmp('fromStartTimesheet').setValue(paramsView.firstDayOfMonth);
         Ext.getCmp('toStartTimesheet').setValue(paramsView.lastDayOfMonth);
+
+        Ext.getCmp('fromStartTimesheet').setMinValue(paramsView.minDateText);
+        Ext.getCmp('toStartTimesheet').setMaxValue(paramsView.maxDateText);
     }
 
     if (isManagerOrOwner()) {
@@ -208,7 +228,7 @@
 
     var searchReportsFieldset = {
         xtype: 'fieldset',
-        title: '<h5>เงื่อนไขในการค้นหา / Criterion</h5>',
+        title: '<h5>' + TextLabel.searchCriterionLabel + '</h5>',
         border: false,
         defaultType: 'field',
         defaults: {
@@ -228,8 +248,8 @@
             align: 'stretch'
         },
         renderTo: 'searchReportsPanel',
-        //height: 230,
-        width: 1150,
+        //height: WindowHeight.height,
+        width: 'auto',
         border: 1,
         defaults: {
             frame: false,
@@ -243,14 +263,14 @@
                 title: '',
                 region: 'center',
                 //height: 160,
-                bodyPadding: "0 150 0 150",
+                bodyPadding: "0 20 0 20",
                 collapsible: false,
                 items: [searchReportsFieldset],
                 buttonAlign: 'center',
                 border: 0,
                 buttons: [
                     {
-                        text: '<i class="glyphicon glyphicon-print"></i> ส่งออกข้อมูล / Export',
+                        text: TextLabel.cmdExportText,
                         handler: function (btn) {
                             var form = Ext.getCmp('searchReportsForm');
 
@@ -281,6 +301,7 @@
                             Ext.MessageBox.wait("กำลังสร้าง Report...", 'กรุณารอ');
                             Ext.Ajax.request({
                                 url: paramsView.urlExportReport,
+                                timeout: 120000,
                                 jsonData: timesheetreport.data,
                                 failure: function (xhr) {
                                     //alert('failed  !');
@@ -323,7 +344,7 @@
                             });
                         }
                     }, {
-                        text: '<i class="glyphicon glyphicon-trash"></i> ล้างข้อมูล / Clear',
+                        text: TextLabel.cmdClearText,
                         handler: function (btn) {
                             var form = Ext.getCmp('searchReportsForm').getForm();
                             form.reset();
@@ -334,6 +355,10 @@
             }
         ]
     });
+
+    //timesheetReportStore.load({
+    //    url: paramsView.urlGetReport
+    //});
 
     setDefault();
 });

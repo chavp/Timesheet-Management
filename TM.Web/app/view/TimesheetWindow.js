@@ -2,14 +2,19 @@
     extend: 'Ext.window.Window',
     xtype: 'timesheetWindow',
     width: 700,
-    title: 'เพิ่ม Timesheet / Add Timesheet',
+    title: '<i class="glyphicon glyphicon-plus"></i> เพิ่ม Timesheet / Add Timesheet',
     resizable: false,
     closable: false,
+    constrain: true,
     config: {
         editData: null,
-        timesheetStore: null
-    },
+        timesheetStore: null,
 
+        projectStore: null,
+        phaseStore: null,
+        tasktypeStore: null,
+        maintaskStore: null
+    },
     initComponent: function () {
         var me = this;
 
@@ -27,25 +32,11 @@
 
             showProjectCombo = false;
         }
-        //console.log(me.timesheetStore);
 
-        var projectStore = Ext.create('widget.projectStore');
-        me.projectStore = projectStore;
-        projectStore.proxy.extraParams.includeAll = null;
-        //projectStore.load({
-        //    params: {
-        //        includeAll: null
-        //    }
-        //});
-
-        var phaseStore = Ext.create('widget.phaseStore');
-        phaseStore.load();
-
-        var tasktypeStore = Ext.create('widget.tasktypeStore');
-        tasktypeStore.load();
-
-        var maintaskStore = Ext.create('widget.maintaskStore');
-        //tasktypeStore.load();
+        me.projectStore.clearFilter();
+        me.projectStore.filter([
+            { filterFn: function (item) { return item.get("ID") > -1 && item.get("StatusDisplay") === 'Open'; } }
+        ]);
 
         var addAction = Ext.create('Ext.Action', {
             //iconCls: 'add-button',
@@ -100,6 +91,7 @@
                                         icon: Ext.MessageBox.INFO,
                                         fn: function (btn) {
                                             me.close();
+                                            me.projectStore.clearFilter();
                                             if (me.timesheetStore) {
                                                 me.timesheetStore.load();
                                             }
@@ -118,9 +110,13 @@
                             },   // function called on success
                             failure: function (transport) {
                                 Ext.MessageBox.hide();
+                                var errorMsg = "";
+                                if (transport.responseText.indexOf('anti-forgery') > 0) {
+                                    errorMsg = "anti-forgery กรุณากดเข้า page นี้ใหม่";
+                                }
                                 Ext.MessageBox.show({
                                     title: messagesForm.errorAlertTitle,
-                                    msg: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล',
+                                    msg: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล <br/>' + errorMsg,
                                     //width: 300,
                                     buttons: Ext.MessageBox.OK,
                                     icon: Ext.MessageBox.ERROR
@@ -144,6 +140,9 @@
                         });
                         //console.log(newTimesheet.data);
                         Ext.MessageBox.wait("กำลังเพิ่มข้อมูล...", 'กรุณารอ');
+
+                        var jsonData = newTimesheet.data;
+
                         Ext.Ajax.request({
                             url: paramsView.urlAddTimesheet,    // where you wanna post
                             success: function (transport) {
@@ -159,6 +158,7 @@
                                         icon: Ext.MessageBox.INFO,
                                         fn: function (btn) {
                                             form.getForm().reset();
+                                            Ext.getCmp('ProjectCode').focus();
                                             //console.log('success');
                                             if (me.timesheetStore) {
                                                 me.timesheetStore.load();
@@ -178,16 +178,20 @@
                             },   // function called on success
                             failure: function (transport) {
                                 Ext.MessageBox.hide();
-                                //console.log(transport.responseText);
+                                //console.log(transport);
+                                var errorMsg = "";
+                                if (transport.responseText.indexOf('anti-forgery') > 0) {
+                                    errorMsg = "anti-forgery กรุณากดเข้า page นี้ใหม่";
+                                }
                                 Ext.MessageBox.show({
                                     title: messagesForm.errorAlertTitle,
-                                    msg: 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล',
+                                    msg: 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล <br/>' + errorMsg,
                                     //width: 300,
                                     buttons: Ext.MessageBox.OK,
                                     icon: Ext.MessageBox.ERROR
                                 });
                             },
-                            jsonData: newTimesheet.data  // your json data
+                            jsonData: jsonData  // your json data
                         });
                     }
                 }
@@ -199,10 +203,12 @@
             text: messagesForm.cancleActionText,
             disabled: false,
             handler: function (widget, event) {
-                me.projectStore.proxy.extraParams.includeAll = 'All';
+                me.projectStore.clearFilter();
                 me.close();
             }
         });
+
+        //console.log(paramsView.maxDateText);
 
         var hourUsedStore = Ext.create('Ext.data.Store', {
             fields: ['value', 'text'],
@@ -214,7 +220,7 @@
                 text: i
             });
         }
-        this.items = [{
+        me.items = [{
             xtype: 'form',
             layout: {
                 type: 'vbox',
@@ -246,8 +252,8 @@
                 xtype: 'combo',
                 id: 'ProjectCode',
                 name: 'ProjectCode',
-                store: projectStore,
-                queryMode: 'remote',
+                store: me.projectStore,
+                queryMode: 'local',
                 displayField: 'Display',
                 valueField: 'ID',
                 forceSelection: true,
@@ -256,13 +262,15 @@
                 emptyText: messagesForm.requireInputEmptyText,
                 editable: true,
                 disabled: (me.editData),
-                hidden: !showProjectCombo
+                hidden: !showProjectCombo,
+                anyMatch: true,
+                listConfig: { itemTpl: highlightMatch.createItemTpl('Display', 'ProjectCode') }
             }, {
                 xtype: 'datefield',
                 id: 'StartDate',
                 name: 'StartDate',
                 padding: '0 350 0 0',
-                fieldLabel: 'วันที่ / Date<span class="required">*</span>',
+                fieldLabel: 'วันที่ / Date <span class="required">*</span>',
                 format: "d/m/Y",
                 value: new Date(),
                 maxValue: paramsView.maxDateText,
@@ -271,22 +279,22 @@
                 xtype: 'combo',
                 id: 'Phase',
                 name: 'Phase',
-                store: phaseStore,
+                store: me.phaseStore,
                 queryMode: 'local',
                 displayField: 'Name',
                 valueField: 'ID',
-                fieldLabel: 'ช่วงโครงการ / Project Phase <span class="required">*</span>',
+                fieldLabel: TextLabel.projectPhaseTitle + ' <span class="required">*</span>',
                 emptyText: messagesForm.requireSelectEmptyText,
                 editable: false
             }, {
                 xtype: 'combo',
                 id: 'TaskType',
                 name: 'TaskType',
-                store: tasktypeStore,
+                store: me.tasktypeStore,
                 queryMode: 'local',
                 displayField: 'Name',
                 valueField: 'ID',
-                fieldLabel: 'ประเภทงาน / Task Type <span class="required">*</span>',
+                fieldLabel: TextLabel.projectTaskTypeTitle + ' <span class="required">*</span>',
                 emptyText: messagesForm.requireSelectEmptyText,
                 value: 1,
                 editable: false
@@ -294,21 +302,23 @@
                 xtype: 'combo',
                 name: 'MainTaskDesc',
                 id: 'MainTask',
-                store: maintaskStore,
-                queryMode: 'remote',
+                store: me.maintaskStore,
+                queryMode: 'local',
                 displayField: 'Name',
                 valueField: 'ID',
-                fieldLabel: 'งานหลัก / Main Task <span class="required">*</span>',
+                fieldLabel: TextLabel.projectMainTaskTitle + ' <span class="required">*</span>',
                 emptyText: messagesForm.requireInputEmptyText,
                 minChars: 1,
-                editable: true
+                editable: true,
+                anyMatch: true,
+                listConfig: { itemTpl: highlightMatch.createItemTpl('Name', 'MainTask') }
             }, {
                 xtype: 'textarea',
                 id: 'SubTaskDesc',
                 name: 'SubTaskDesc',
                 fieldLabel: 'งานย่อย / Sub Task <span class="required">*</span>',
-                emptyText: messagesForm.requireInputEmptyText,
-                maxLength: 255
+                height: 200,
+                emptyText: messagesForm.requireInputEmptyText
             },
             {
                 xtype: 'combo',
@@ -339,6 +349,7 @@
                 xtype: 'textarea',
                 name: 'Remark',
                 fieldLabel: 'หมายเหตุ / Remark',
+                height: 50,
                 maxLength: 255,
                 allowBlank: true
             }],
@@ -348,8 +359,7 @@
                 new Ext.button.Button(cancleAction)
             ]
         }];
-
-        this.callParent();
+        me.callParent();
     },
     
     setValues: function(record){
@@ -363,9 +373,12 @@
         //Ext.getCmp('ProjectCode').focus();
         //Ext.getCmp('ProjectCode').expand();
 
-        Ext.getCmp('ProjectCode').focus("", 500, function (w) {
-            console.log('Focus');
-        }, this);
+        Ext.getCmp('ProjectCode').focus();
         
+    },
+    listeners: {
+        show: function (w, eOpts) {
+            Ext.getCmp('ProjectCode').focus(false, true);
+        }
     }
 });

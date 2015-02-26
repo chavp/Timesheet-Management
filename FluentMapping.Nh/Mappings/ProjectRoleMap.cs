@@ -22,6 +22,8 @@ namespace Cwn.PM.FluentMapping.Mappings
             Map(x => x.Order, "PJ_ROLE_ORDER");
             Map(x => x.IsOwner, "PJ_ROLE_OWNER");
 
+            Map(x => x.IsNonRole, "PJ_NONROLE_FLAG");
+
             HasMany(x => x.ProjectRoleRates)
                 .KeyColumn("PJ_ROLE_ID")
                 .Cascade

@@ -3,7 +3,10 @@
     xtype: 'department',
     fields: [
         { name: 'ID', type: 'int' },
+        { name: 'Name' },
         { name: 'DivisionID', type: 'int' },
-        { name: 'Name' }
+        { name: 'DivisionName' },
+        { name: 'UnderEmployees', type: 'int' },
+        { name: 'TimesheetCount', type: 'int' }
     ]
 });

@@ -2,45 +2,92 @@
     ViewBag.Title = "Search Project";
 }
 
-<div class="container">
-    <div class="bs-docs-section">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="page-header">
-                    <h3><i class="glyphicon glyphicon-th-large"></i>&nbsp;Project</h3>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="bs-component">
-                    <div id="projectPanel">
-                    
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+@Html.Partial("_Template", new PJ_CWN019.TM.Web.Models.TemplateView
+    {
+        MainPanelID = "projectPanel",
+        MainIcon = PJ_CWN019.TM.Web.Models.ConstPage.ProjectManagementIcon,
+        MainTitle = PJ_CWN019.TM.Web.Models.ConstPage.ProjectManagementTitle,
+        //SubIcon = PJ_CWN019.TM.Web.Models.ConstPage.ProjectIcon,
+        //SubTitle = PJ_CWN019.TM.Web.Models.ConstPage.ProjectTitle,
 
+        SubIcon = "glyphicon glyphicon-th",
+        SubTitle = PJ_CWN019.TM.Web.Models.ConstPage.ProjectTitle
+    })
+
+<style>
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+        font-family: sans-serif;
+        font-size: 11px;
+    }
+
+    .tick line{
+        opacity: 0.2;
+    }
+
+    .line-presale {
+      fill: none;
+      stroke: steelblue;
+      stroke-width: 1.5px;
+    }
+
+    .line-implement {
+      fill: none;
+      stroke: red;
+      stroke-width: 1.5px;
+    }
+
+    .line-warranty {
+      fill: none;
+      stroke: green;
+      stroke-width: 1.5px;
+    }
+
+    .line-operation {
+      fill: none;
+      stroke: pink;
+      stroke-width: 1.5px;
+    }
+    path {
+      opacity: 0.8;
+    }
+
+</style>
 @section scripts{
+    @Scripts.Render("~/bundles/d3")
     <script>
-        paramsView.urlReadProject = '@Url.Content("~/Project/FindProject")';
-        paramsView.urlReadDepartment = '@Url.Content("~/Project/GetDepartment")';
-        paramsView.urlReadDivision = '@Url.Content("~/Project/GetDivision")';
-        paramsView.urlReadEmployee = '@Url.Content("~/Project/FindEmployee")';
-        paramsView.urlReadProjectMember = '@Url.Content("~/Project/FindProjectMember")';
-        paramsView.urlReadProjectRole = '@Url.Content("~/Project/GetProjectRole")';
-        paramsView.urlSaveProjectRole = '@Url.Content("~/Project/SaveProjectRole")';
-        paramsView.urlAssignProjectMember = '@Url.Content("~/Project/AssignProjectMember")';
-        paramsView.urlRemoveProjectMember = '@Url.Content("~/Project/RemoveProjectMember")';
-        paramsView.userDivisionID = '@ViewBag.UserDivisionID';
-        paramsView.userDepartmentID = '@ViewBag.UserDepartmentID';
+    paramsView.urlReadProject = '@Url.Content("~/Project/FindProject")';
+    paramsView.urlReadDepartment = '@Url.Content("~/Project/GetDepartment")';
+    paramsView.urlReadDivision = '@Url.Content("~/Project/GetDivision")';
+    paramsView.urlReadEmployee = '@Url.Content("~/Project/FindEmployee")';
+    paramsView.urlReadProjectMember = '@Url.Content("~/Project/FindProjectMember")';
+    paramsView.urlReadProjectRole = '@Url.Content("~/Project/GetProjectRole")';
+    paramsView.urlSaveProjectRole = '@Url.Content("~/Project/SaveMemberProjectRole")';
+    paramsView.urlAssignProjectMember = '@Url.Content("~/Project/AssignProjectMember")';
+    paramsView.urlRemoveProjectMember = '@Url.Content("~/Project/RemoveProjectMember")';
+    paramsView.userDivisionID = '@ViewBag.UserDivisionID';
+    paramsView.userDepartmentID = '@ViewBag.UserDepartmentID';
+    paramsView.urlGetCumulativeEffortByWeek = '@Url.Content("~/Project/GetCumulativeEffortByWeek")';
+    paramsView.urlGetProjectStatus = '@Url.Content("~/Project/GetProjectStatus")';
+    paramsView.urlCheckDuplicatedProjectCode = '@Url.Content("~/Project/CheckDuplicatedProjectCode")';
+    paramsView.urlSaveProject = '@Url.Content("~/Project/SaveProject")';
+    paramsView.urlGetAllInitialMember = '@Url.Content("~/Project/GetAllInitialMember")';
+    paramsView.urlProjectApi = '@Url.Content("~/Project/")';
+    paramsView.urlGetCustomer = '@Url.Content("~/Project/GetAllCustomer")';
 
-        @if(@Roles.IsUserInRole("Manager")){
+    paramsView.urlGetCumulativeEffortByDate = '@Url.Content("~/Organization/GetCumulativeCostByDate")';
+    paramsView.urlGetEffortTimesheetItem = '@Url.Content("~/Organization/GetEffortTimesheetItem")';
+
+    @if(@Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager)){
         <text>
-        paramsView.isManagerRole = true;
-        </text>
+    paramsView.isManagerRole = true;
+    </text>
         }
     </script>
     <script src="@Url.Content("~/app/onReady/Project/Search.js")"></script>

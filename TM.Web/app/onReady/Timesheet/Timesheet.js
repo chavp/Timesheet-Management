@@ -1,29 +1,41 @@
 ﻿Ext.onReady(function () {
 
     var projectStore = Ext.create('widget.projectStore');
+    projectStore.load({
+        url: paramsView.urlReadProject
+    });
 
     var timesheetStore = Ext.create('widget.timesheetStore');
     timesheetStore.proxy.extraParams.projectID = -1;
     timesheetStore.proxy.extraParams.fromDateText = paramsView.fromDateText;
     timesheetStore.proxy.extraParams.toDateText = paramsView.toDateText;
-
-    projectStore.load();
     timesheetStore.load({
-        callback: function (records, operation, success) {
-            if (success) {
+        url: paramsView.urlGetTimesheet
+    });
 
-            }
-        }
+    var phaseStore = Ext.create('widget.phaseStore');
+    phaseStore.load({
+        url: paramsView.urlGetAllPhase
+    });
+
+    var tasktypeStore = Ext.create('widget.tasktypeStore');
+    tasktypeStore.load({
+        url: paramsView.urlGetAllTaskType
+    });
+
+    var maintaskStore = Ext.create('widget.maintaskStore');
+    maintaskStore.load({
+        url: paramsView.urlGetMainTask
     });
 
     var searchProjectCriFieldset = {
         xtype: 'fieldset',
-        title: '<h5>เงื่อนไขในการค้นหา / Criterion</h5>',
+        title: '<h5>' + TextLabel.searchCriterionLabel + '</h5>',
         border: false,
         defaultType: 'field',
         defaults: {
-            labelWidth: 400,
-            anchor: '-20 -20',
+            labelWidth: 220,
+            anchor: '95%',
             allowBlank: false,
             labelAlign: 'right'
         },
@@ -40,35 +52,46 @@
                 forceSelection: true,
                 minChars: 1,
                 triggerAction: 'all',
-                queryMode: 'remote',
+                queryMode: 'local',
                 allowBlank: true,
                 editable: true,
-                value: -1
+                value: -1,
+                initialValue: -1,
+                listeners: {
+                    scope: this,
+                    afterRender: function (t, o) {
+                        t.value = t.initialValue;
+                    }
+                },
+                listConfig: { itemTpl: highlightMatch.createItemTpl('Display', 'projectID') }
             },
             {
                 xtype: 'fieldcontainer',
-                fieldLabel: 'ช่วงวันที่ / Date (วันอาทิตย์ - วันเสาร์ ของสัปดาห์ปัจจุบัน)',
+                fieldLabel: 'ช่วงวันที่ / Date<br/>(วันอาทิตย์ - วันเสาร์ ของสัปดาห์ปัจจุบัน)',
                 name: 'dateBetween',
                 layout: 'hbox',
-                padding: "0 100 0 0",
                 items: [{
                     xtype: 'datefield',
                     id: 'fromStartTimesheet',
                     name: 'fromStartTimesheet',
                     anchor: '100%',
                     fieldLabel: '',
-                    flex: 1,
+                    width: 100,
                     format: "d/m/Y",
                     editable: false,
                     vtype: 'daterange',
                     endDateField: 'toStartTimesheet'  // limited to the current date or prior
+                }, {
+                    xtype: 'displayfield',
+                    margin: '0 5 0 5',
+                    value: '-'
                 }, {
                     xtype: 'datefield',
                     id: 'toStartTimesheet',
                     name: 'toStartTimesheet',
                     anchor: '100%',
                     fieldLabel: '',
-                    flex: 1,
+                    width: 100,
                     format: "d/m/Y",
                     editable: false,
                     vtype: 'daterange',
@@ -82,7 +105,7 @@
     var setDefault = function () {
         Ext.getCmp('fromStartTimesheet').setValue(paramsView.fromDateText);
         Ext.getCmp('toStartTimesheet').setValue(paramsView.toDateText);
-    }
+    };
 
     var searchTimesheet = function () {
         var form = Ext.getCmp('searchTimesheetForm');
@@ -95,25 +118,22 @@
 
             projectID = projectID || -1;
 
+            timesheetStore.currentPage = 1;
             timesheetStore.proxy.extraParams.projectID = projectID;
             timesheetStore.proxy.extraParams.fromDateText = fromDate;
             timesheetStore.proxy.extraParams.toDateText = toDate;
 
             timesheetStore.load({
-                callback: function (records, operation, success) {
-                    if (success) {
-
-                    }
-                }
+                url: paramsView.urlGetTimesheet
             });
         }
-    }
+    };
 
     Ext.create('Ext.panel.Panel', {
         layout: 'border',
         renderTo: 'timesheetPanel',
-        height: 560,
-        width: 1150,
+        height: WindowHeight.height,
+        width: 'auto',
         border: 1,
         defaults: {
             frame: false,
@@ -127,18 +147,18 @@
                 region: 'north',
                 //height: 160,
                 collapsible: false,
-                bodyPadding: "0 150 0 150",
+                bodyPadding: "0 20 0 20",
                 items: [searchProjectCriFieldset],
                 buttonAlign: 'center',
                 border: 0,
                 buttons: [
                     {
-                        text: '<i class="glyphicon glyphicon-search"></i> ค้นหา / Search',
+                        text: TextLabel.cmdSearchText,
                         handler: function (btn) {
                             searchTimesheet();
                         }
                     }, {
-                        text: '<i class="glyphicon glyphicon-trash"></i> ล้างข้อมูล / Clear',
+                        text: TextLabel.cmdClearText,
                         handler: function (btn) {
                             var form = Ext.getCmp('searchTimesheetForm').getForm();
                             form.reset();
@@ -167,7 +187,8 @@
                         locked: true
                     }, {
                         xtype: 'actioncolumn',
-                        //align: 'center',
+                        sortable: false,
+                        menuDisabled: true,
                         width: 30,
                         items: [{
                             // Use a URL in the icon config
@@ -179,25 +200,44 @@
                                 //grid.getSelectionModel().select(record);
 
                                 var editForm = Ext.create('widget.timesheetWindow', {
+                                    iconCls: 'edit-timesheet-icon',
                                     editData: record,
                                     animateTarget: row,
                                     modal: true,
-                                    timesheetStore: timesheetStore
+                                    timesheetStore: timesheetStore,
+
+                                    projectStore: projectStore,
+                                    phaseStore: phaseStore,
+                                    tasktypeStore: tasktypeStore,
+                                    maintaskStore: maintaskStore
+
                                 });
                                 editForm.setValues(record);
                                 editForm.show();
                             }
                         }]
                     },
-                    { text: 'ID', dataIndex: 'ID', hidden: true },
-                    { text: 'รหัสโครงการ<br/>Project Code', dataIndex: 'ProjectCode', flex: 1 },
-                    { text: 'ProjectName', dataIndex: 'ProjectName', hidden: true },
-                    { text: 'วันที่<br/>Date', dataIndex: 'StartDate', width: 90, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
-                    { text: 'ช่วงโครงการ<br/>Project Phase', dataIndex: 'Phase', flex: 2 },
-                    { text: 'ประเภทงาน<br/>Task Type', dataIndex: 'TaskType', width: 80 },
-                    { text: 'งานหลัก<br/>Main Task', dataIndex: 'MainTaskDesc', width: 80 },
-                    { text: 'งานย่อย<br/>Sub Task', dataIndex: 'SubTaskDesc', flex: 3 },
-                    { text: 'จำนวน ชม. ที่ใช้<br/>Used Hour(s)', dataIndex: 'HourUsed', flex: 1 }
+                    { text: 'ID', dataIndex: 'ID', hidden: true, sortable: true },
+                    { text: 'รหัสโครงการ<br/>Project Code', dataIndex: 'ProjectCode', width: 110, sortable: true },
+                    { text: 'ProjectName', dataIndex: 'ProjectName', hidden: true, sortable: true },
+                    { text: 'วันที่<br/>Date', dataIndex: 'StartDate', width: 90, sortable: true, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
+                    { text: 'ช่วงโครงการ<br/>Project Phase', dataIndex: 'Phase', sortable: true, width: 230 },
+                    { text: 'ประเภทงาน<br/>Task Type', dataIndex: 'TaskType', sortable: true, width: 80 },
+                    { text: 'งานหลัก<br/>Main Task', dataIndex: 'MainTaskDesc', sortable: true, width: 150 },
+                    {
+                        text: 'งานย่อย<br/>Sub Task', dataIndex: 'SubTaskDesc', sortable: true, width: 150,
+                        renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                            // Sample value: msimms & Co. "like" putting <code> tags around your code
+
+                            value = Ext.String.htmlEncode(value);
+
+                            // "double-encode" before adding it as a data-qtip attribute
+                            metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+
+                            return value;
+                        }
+                    },
+                    { text: 'จำนวน ชม. ที่ใช้<br/>Used Hour(s)', dataIndex: 'HourUsed', sortable: true, flex: 1 }
                 ],
                 listeners: {
                     selectionchange: function (obj, selected, eOpts) {
@@ -220,11 +260,15 @@
                         var addForm = Ext.create('widget.timesheetWindow', {
                             animateTarget: btn,
                             modal: true,
-                            timesheetStore: timesheetStore
+                            timesheetStore: timesheetStore,
+
+                            projectStore: projectStore,
+                            phaseStore: phaseStore,
+                            tasktypeStore: tasktypeStore,
+                            maintaskStore: maintaskStore
                         });
 
                         addForm.show();
-                        addForm.setFocusProject();
                     }
                 }, {
                     cls: 'btn',
@@ -246,7 +290,7 @@
                         }
 
                         if (listOfDelete.length > 0) {
-                            Ext.MessageBox.confirm('ยืนยัน / Confirm', 'คุณต้องการลบ Timesheet ใช่หรือไม่?',
+                            Ext.MessageBox.confirm('ยืนยัน / Confirm', 'คุณต้องการลบ Timesheet ใช่ หรือ ไม่?',
                                 function (btn) {
                                     if (btn === "yes") {
                                         Ext.MessageBox.wait("กำลังลบข้อมูล...", 'กรุณารอ / Please wait');
@@ -254,7 +298,27 @@
                                             url: paramsView.urlDeleteTimesheet,
                                             success: function (transport) {
                                                 Ext.MessageBox.hide();
-                                                timesheetStore.load();
+                                                var respose = Ext.decode(transport.responseText);
+                                                if (respose.success) {
+                                                    Ext.MessageBox.show({
+                                                        title: messagesForm.successTitle,
+                                                        msg: respose.message,
+                                                        //width: 300,
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.MessageBox.INFO,
+                                                        fn: function (btn) {
+                                                            searchTimesheet();
+                                                        }
+                                                    });
+                                                } else {
+                                                    Ext.MessageBox.show({
+                                                        title: messagesForm.errorAlertTitle,
+                                                        msg: 'เกิดข้อผิดพลาดในขั้นตอนการลบ Timesheet<br/>' + respose.message,
+                                                        //width: 300,
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.MessageBox.ERROR
+                                                    });
+                                                }
                                             },   // function called on success
                                             failure: function (transport) {
                                                 Ext.MessageBox.hide();

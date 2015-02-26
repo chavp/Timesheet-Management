@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using System.Web.SessionState;
 
 namespace PJ_CWN019.TM.Web.Controllers
 {
@@ -11,12 +12,14 @@ namespace PJ_CWN019.TM.Web.Controllers
     using NHibernate.Linq;
     using PJ_CWN019.TM.Web.Filters;
     using PJ_CWN019.TM.Web.Models;
+    using PJ_CWN019.TM.Web.Models.Providers;
     using System.Web.Security;
     using WebMatrix.WebData;
 
     [ErrorLog]
     [ProfileLog]
     [Authorize]
+    [SessionState(SessionStateBehavior.Disabled)]
     public class AccountController : Controller
     {
         ISessionFactory _sessionFactory = null;
@@ -45,7 +48,7 @@ namespace PJ_CWN019.TM.Web.Controllers
             }
 
             // If we got this far, something failed, redisplay form
-            ModelState.AddModelError("", "กรุณา ระบุรหัสพนักงาน หรือ รหัสเข้าระบบ ให้ถูกต้อง");
+            ModelState.AddModelError("", "กรุณาระบุรหัสพนักงาน หรือรหัสเข้าระบบให้ถูกต้อง");
             return View(model);
         }
 
@@ -78,9 +81,9 @@ namespace PJ_CWN019.TM.Web.Controllers
         [HttpPost]
         public ActionResult ChangePassword(string oldPassword, string newPassword, string confirmNewPassword, bool isFourceToChange = false)
         {
-            var oldPasswordNotValid = "กรุณาระบุ รหัสเข้าระบบเดิม ให้ถูกต้อง";
-            var strong8PasswordNotValid = "กรุณาระบุ รหัสเข้าระบบใหม่ ให้มีความยาวมากกว่า 8 ตัวอักษร";
-            var newPasswordNotValid = "กรุณาระบุ รหัสเข้าระบบใหม่ ไม่ให้ตรงกับ รหัสพนักงาน";
+            var oldPasswordNotValid = "กรุณาระบุรหัสเข้าระบบเดิมให้ถูกต้อง";
+            var strong8PasswordNotValid = "กรุณาระบุรหัสเข้าระบบใหม่ตั้งแต่ 8 ตัวอักษรขึ้นไป";
+            var newPasswordNotValid = "กรุณาระบุรหัสเข้าระบบใหม่ไม่ให้ตรงกับรหัสพนักงาน";
 
             if (!isFourceToChange)
             {
@@ -109,7 +112,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                         user.LastPasswordChangedDate = DateTime.Now;
                         session.Flush();
                     }
-                    msg = "แก้ไข รหัสเข้าระบบ เสร็จสบบูรณ์";
+                    msg = "แก้ไขรหัสเข้าระบบเสร็จสมบูรณ์";
                     success = true;
                 }
                 return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
@@ -118,11 +121,11 @@ namespace PJ_CWN019.TM.Web.Controllers
             {
                 if (string.IsNullOrEmpty(newPassword))
                 {
-                    ModelState.AddModelError("", "กรุณาระบุ รหัสเข้าระบบใหม่ ให้ถูกต้อง");
+                    ModelState.AddModelError("", "กรุณาระบุรหัสเข้าระบบใหม่ให้ถูกต้อง");
                 }
                 else if (newPassword != confirmNewPassword)
                 {
-                    ModelState.AddModelError("", "กรุณาระบุ รหัสเข้าระบบใหม่ ให้ตรงกับ ยืนยันรหัสเข้าระบบใหม่");
+                    ModelState.AddModelError("", "กรุณาระบุรหัสเข้าระบบใหม่ให้ตรงกับยืนยันรหัสเข้าระบบใหม่");
                 }
                 else if (newPassword.Length < 8)
                 {
@@ -147,7 +150,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                             user.LastPasswordChangedDate = DateTime.Now;
                             session.Flush();
 
-                            return RedirectToAction("Index", "Home");
+                            return RedirectToAction("ChangePasswordSuccess");
                         }
                     }
                 }
@@ -159,13 +162,18 @@ namespace PJ_CWN019.TM.Web.Controllers
             }
         }
 
+        public ActionResult ChangePasswordSuccess()
+        {
+            return View();
+        }
+
         public ActionResult ChangePassword()
         {
             return View(new ChangePasswordView());
         }
 
         [HttpPost]
-        [Authorize(Roles = "Support")]
+        [Authorize(Roles = ConstAppRoles.Support)]
         public JsonResult ResetPassword(int empoyeeID)
         {
             var success = false;
@@ -186,7 +194,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                     redirectToIndex = true;
                 }
             }
-            msg = "คืนค่าเริ่มต้นของ รหัสเข้าระบบ ผู้ใช้งานเสร็จสบบูรณ์";
+            msg = "คืนค่าเริ่มต้นรหัสเข้าระบบผู้ใช้งานเสร็จสมบูรณ์";
             success = true;
 
             return Json(new { success = success, message = msg, redirectToIndex = redirectToIndex }, JsonRequestBehavior.AllowGet);

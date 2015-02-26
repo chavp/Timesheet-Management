@@ -3,10 +3,10 @@
     alias: 'widget.timesheetStore',
     model: 'TM.model.Timesheet',
     autoLoad: false,
-    pageSize: 10,
+    pageSize: 100,
 
     proxy: {
-        type: 'ajax',
+        type: 'rest',
         url: paramsView.urlGetTimesheet,
         extraParams: {
             projectID: -1,
@@ -31,7 +31,7 @@
                     icon: Ext.MessageBox.ERROR
                 });
                 
-                window.location.href = paramsView.urlIndexPage;
+                //window.location.href = paramsView.urlIndexPage;
             }
         }
     }

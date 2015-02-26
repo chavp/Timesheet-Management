@@ -4,9 +4,9 @@
     title: '<i class="glyphicon glyphicon-comment"></i> ทุก feedback ของคุณ คือ วิวัฒนาการของเรา...',
     resizable: false,
     closable: false,
+    constrain: true,
     width: 450,
-    config: {
-    },
+    config: { },
     initComponent: function () {
         var self = this;
 
