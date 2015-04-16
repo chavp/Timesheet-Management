@@ -67,6 +67,11 @@ namespace Cwn.PM.BusinessModels.Entities
         /// </summary>
         public virtual decimal EstimateProjectValue { get; set; }
 
+        /// <summary>
+        /// มูลค่าโครงการ                                
+        /// </summary>
+        public virtual decimal ProjectValue { get; set; }
+
         public virtual bool IsNonProject { get; set; }
 
         public virtual IList<ProjectMember> Members { get; protected set; }
@@ -85,19 +90,20 @@ namespace Cwn.PM.BusinessModels.Entities
             return member;
         }
 
-        public virtual int Progress { get; protected set; }
+        //public virtual ProjectProgress Progress { get; set; }
 
-        public virtual ProjectProgressUpdateLog UpdateProgress(int newProgress, DateTime updateDate)
-        {
-            Progress = newProgress;
-            var newLog = new ProjectProgressUpdateLog(this, updateDate, newProgress);
-            return newLog;
-        }
+        //public virtual ProjectProgressUpdateLog UpdateProgress(int newProgress, DateTime updateDate)
+        //{
+        //    Progress = newProgress;
+        //    var newLog = new ProjectProgressUpdateLog(this, updateDate, newProgress);
+        //    return newLog;
+        //}
 
         public virtual bool ContainsMember(long employeeID)
         {
             var count = (from m in Members where m.Project == this && m.User.EmployeeID == employeeID select m).Count();
             return (count > 0);
         }
+
     }
 }
