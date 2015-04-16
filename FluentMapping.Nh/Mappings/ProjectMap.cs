@@ -31,10 +31,11 @@ namespace Cwn.PM.FluentMapping.Mappings
             Map(x => x.WarrantyStartDate, "WARRANTY_START_DATE").CustomType("Date");
             Map(x => x.WarrantyEndDate, "WARRANTY_END_DATE").CustomType("Date");
             Map(x => x.EstimateProjectValue, "ESTIMATE_PROJECT_VALUE").CustomSqlType("NUMERIC(13, 2)");
+            Map(x => x.ProjectValue, "PROJECT_VALUE").CustomSqlType("NUMERIC(13, 2)");
 
             Map(x => x.IsNonProject, "PJ_NONPROJECT_FLAG");
 
-            Map(x => x.Progress, "PJ_PROGRESS");
+            //Map(x => x.Progress, "PJ_PROGRESS");
 
             HasMany(x => x.Members)
                 .KeyColumn("PJ_ID")
@@ -51,6 +52,8 @@ namespace Cwn.PM.FluentMapping.Mappings
 
             References(x => x.Status, "PRJ_STATUS_ID");
             References(x => x.Customer, "CUS_ID");
+
+            //References(x => x.Progress, "PRJ_PROGRESS_ID");
 
             MapVersion();
         }

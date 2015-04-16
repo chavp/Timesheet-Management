@@ -18,7 +18,7 @@ namespace Cwn.PM.FluentMapping.Mappings
             Table("PRJ_PROJECT_THRESHOLD");
 
             Map(x => x.Name, "PJ_THRESHOLD_NAME").Length(50).Not.Nullable();
-            Map(x => x.LimitRatio, "PJ_THRESHOLD_LIMIT").CustomSqlType("NUMERIC(4, 3)");
+            Map(x => x.LimitRatio, "PJ_THRESHOLD_LIMIT").CustomSqlType("NUMERIC(8, 3)");
 
             MapVersion();
         }
