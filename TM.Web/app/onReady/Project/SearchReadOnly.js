@@ -73,6 +73,12 @@ Ext.onReady(function () {
         ]
     };
 
+    var customerstore = Ext.create("widget.customerstore");
+    customerstore.load({
+        pageSize: 9999,
+        url: paramsView.urlGetCustomer
+    });
+
     var searchProject = function () {
         var form = Ext.getCmp('searchProjectForm');
         if (form.isValid()) {
@@ -92,6 +98,8 @@ Ext.onReady(function () {
             });
         }
     }
+
+    var projectdeliveryphasestore = Ext.create('widget.projectdeliveryphasestore');
 
     Ext.create('Ext.panel.Panel', {
         layout: 'border',
@@ -148,7 +156,7 @@ Ext.onReady(function () {
                         xtype: 'actioncolumn',
                         sortable: false,
                         menuDisabled: true,
-                        width: 60,
+                        width: 100,
                         items: [{
                             // Use a URL in the icon config
                             xtype: 'button',
@@ -187,29 +195,58 @@ Ext.onReady(function () {
                                     editData: record,
                                     animateTarget: row,
                                     projectStore: projectStore,
+                                    customerstore: customerstore,
+                                    projectdeliveryphasestore: projectdeliveryphasestore,
                                     modal: true
                                 });
 
                                 editForm.setValues(record);
                                 editForm.show();
                             }
+                        },
+                        {
+                            xtype: 'button',
+                            tooltip: 'Cumulative Cost Flow Diagram',
+                            iconCls: 'chart-line-project-member-icon',
+                            isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                var totalTimesheet = record.get('TotalTimesheet');
+                                if (totalTimesheet > 0) return false;
+                                return true;
+                            },
+                            handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                grid.getSelectionModel().select(record);
+                                var chartForm = Ext.create('widget.chartWindow', {
+                                    title: "" + record.get('Code') + " (" + record.get('Name') + ")",
+                                    iconCls: 'chart-line-project-member-icon',
+                                    projectData: record,
+                                    animateTarget: row,
+                                    modal: true
+                                });
+                                chartForm.show();
+                            }
+                        },
+                        {
+                            xtype: 'button',
+                            tooltip: 'Project Activities Bar',
+                            iconCls: 'chart-bar-project-member-icon',
+                            isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                var totalTimesheet = record.get('TotalTimesheet');
+                                if (totalTimesheet > 0) return false;
+                                return true;
+                            },
+                            handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                grid.getSelectionModel().select(record);
+
+                                var barChartForm = Ext.create('widget.projectactivitiesbarwindow', {
+                                    title: "" + record.get('Code') + " (" + record.get('Name') + ")",
+                                    iconCls: 'chart-bar-project-member-icon',
+                                    projectData: record,
+                                    animateTarget: row,
+                                    modal: true
+                                });
+                                barChartForm.show();
+                            }
                         }
-                        //, {
-                        //    xtype: 'button',
-                        //    tooltip: 'Cumulative Flow Chart',
-                        //    iconCls: 'chart-line-project-memebr-icon',
-                        //    handler: function (grid, rowIndex, colIndex, item, event, record, row) {
-                        //        grid.getSelectionModel().select(record);
-                        //        var chartForm = Ext.create('widget.chartWindow', {
-                        //            title: 'Cumulative Effort Flow Chart',
-                        //            iconCls: 'chart-line-project-memebr-icon',
-                        //            projectData: record,
-                        //            animateTarget: row,
-                        //            modal: true
-                        //        });
-                        //        chartForm.show();
-                        //    }
-                        //}
                         ]
                     },
                     { text: 'ID', dataIndex: 'ID', flex: 1, sortable: false, hidden: true },

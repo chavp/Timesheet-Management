@@ -25,7 +25,8 @@ Ext.onReady(function () {
     customerstore.load({
         pageSize: 9999,
         url: paramsView.urlGetCustomer
-    })
+    });
+
     var searchProject = function () {
         var form = Ext.getCmp('searchProjectForm');
         if (form.isValid()) {
@@ -46,6 +47,8 @@ Ext.onReady(function () {
 
         }
     }
+
+    var projectdeliveryphasestore = Ext.create('widget.projectdeliveryphasestore');
 
     var searchProjectFieldset = {
         xtype: 'fieldset',
@@ -238,6 +241,7 @@ Ext.onReady(function () {
                                     animateTarget: row,
                                     projectStore: projectStore,
                                     customerstore: customerstore,
+                                    projectdeliveryphasestore: projectdeliveryphasestore,
                                     modal: true
                                 });
 
@@ -247,8 +251,13 @@ Ext.onReady(function () {
                         },
                         {
                             xtype: 'button',
-                            tooltip: 'Cumulative Flow Diagram (CFD)',
+                            tooltip: 'Cumulative Cost Flow Diagram',
                             iconCls: 'chart-line-project-member-icon',
+                            isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                var totalTimesheet = record.get('TotalTimesheet');
+                                if (totalTimesheet > 0) return false;
+                                return true;
+                            },
                             handler: function (grid, rowIndex, colIndex, item, event, record, row) {
                                 grid.getSelectionModel().select(record);
                                 var chartForm = Ext.create('widget.chartWindow', {
@@ -265,6 +274,11 @@ Ext.onReady(function () {
                             xtype: 'button',
                             tooltip: 'Project Activities Bar',
                             iconCls: 'chart-bar-project-member-icon',
+                            isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                var totalTimesheet = record.get('TotalTimesheet');
+                                if (totalTimesheet > 0) return false;
+                                return true;
+                            },
                             handler: function (grid, rowIndex, colIndex, item, event, record, row) {
                                 grid.getSelectionModel().select(record);
 
@@ -281,7 +295,7 @@ Ext.onReady(function () {
                         ]
                     },
                     { text: 'ID', dataIndex: 'ID', flex: 1, hidden: true, sortable: true },
-                    { text: TextLabel.projectCodeColumnText, dataIndex: 'Code', sortable: true, flex: 1 },
+                    { text: TextLabel.projectCodeColumnText, dataIndex: 'Code', sortable: true, width: 100 },
                     {
                         text: TextLabel.projectNameColumnText, dataIndex: 'Name', sortable: true, flex: 3,
                         renderer: function (value, metaData, record, rowIdx, colIdx, store) {
@@ -295,8 +309,15 @@ Ext.onReady(function () {
                             return value;
                         }
                     },
-                    { text: 'วันที่เริ่มโครงการ<br/>Start Date', dataIndex: 'StartDate', sortable: true, flex: 1, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
-                    { text: 'วันที่ปิดโครงการ<br/>End Date', dataIndex: 'EndDate', sortable: true, flex: 1, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
+                    {
+                        text: 'ความคืบหน้า<br/>Progress', dataIndex: 'Progress', sortable: true, width: 90, align: 'right',
+                        renderer: function (value, metadata, record, rowIndex, colIndex, store) {
+                            //metadata.attr = "style='color: #aaa';";
+                            return value + "%";
+                        }
+                    },
+                    { text: 'วันที่เริ่มโครงการ<br/>Start Date', dataIndex: 'StartDate', sortable: true, width: 110, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
+                    { text: 'วันที่ปิดโครงการ<br/>End Date', dataIndex: 'EndDate', sortable: true, width: 110, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
                     { text: 'สมาชิกในโครงการ<br/>Project Members', dataIndex: 'Members', sortable: true, flex: 1, align: 'center' },
                     {
                         text: 'สถานะโครงการ<br/>Project Status', dataIndex: 'StatusDisplay', sortable: true, flex: 1, align: 'center',
@@ -312,6 +333,79 @@ Ext.onReady(function () {
                         }
                     },
                     {
+                        text: 'การตอบรับ<br/>Accept', dataIndex: 'IsProjectAccept',
+                        xtype: 'checkcolumn',
+                        listeners: {
+                            checkchange: function (chk, rowIndex, checked, eOpts) {
+                                var record = projectStore.getAt(rowIndex);
+
+                                var confirmMsg = "ท่านต้องการตอบรับโครงการ";
+                                var isProjectAccept = !checked,
+                                    projectID = record.get("ID"),
+                                    waitMag = "กำลังดำเนินการตอบรับโครงการ...",
+                                    url = paramsView.urlAcceptedProject;
+
+                                if (isProjectAccept) {
+                                    // Unaccepted
+                                    confirmMsg = "ท่านต้องการยกเลิกการตอบรับโครงการ";
+                                    waitMag = "กำลังดำเนินการยกเลิกการตอบรับโครงการ...";
+                                    url = paramsView.urlUnacceptedProject;
+                                } else {
+                                    // Accepted
+                                }
+
+                                Ext.MessageBox.confirm('ยืนยัน', confirmMsg + 'นี้ใช่ หรือ ไม่?',
+                                function (btn) {
+                                    if (btn === "yes") {
+                                        Ext.MessageBox.wait(waitMag, 'กรุณารอ');
+
+                                        Ext.Ajax.request({
+                                            url: url,
+                                            success: function (transport) {
+                                                //Ext.MessageBox.hide();
+                                                var respose = Ext.decode(transport.responseText);
+                                                if (respose.success) {
+                                                    Ext.MessageBox.show({
+                                                        title: messagesForm.successTitle,
+                                                        msg: respose.message,
+                                                        //width: 300,
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.MessageBox.INFO,
+                                                        fn: function (btn) {
+                                                            projectStore.load();
+                                                        }
+                                                    });
+                                                    //projectStore.load();
+                                                } else {
+                                                    Ext.MessageBox.show({
+                                                        title: messagesForm.errorAlertTitle,
+                                                        msg: respose.message,
+                                                        //width: 300,
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.MessageBox.ERROR
+                                                    });
+                                                }
+                                            },
+                                            failure: function (transport) {
+                                                projectStore.rejectChanges();
+                                                Ext.MessageBox.show({
+                                                    title: messagesForm.errorAlertTitle,
+                                                    msg: transport.responseText,
+                                                    //width: 300,
+                                                    buttons: Ext.MessageBox.OK,
+                                                    icon: Ext.MessageBox.ERROR
+                                                });
+                                            },
+                                            jsonData: { projectID: projectID }
+                                        });
+                                    } else {
+                                        projectStore.rejectChanges();
+                                    }
+                                });
+                            }
+                        }
+                    },
+                    {
                         xtype: 'actioncolumn',
                         sortable: false,
                         menuDisabled: true,
@@ -322,9 +416,9 @@ Ext.onReady(function () {
                             text: TextLabel.cmdDeleteText,
                             tooltip: TextLabel.cmdDeleteText,
                             scope: this,
-                            xtype: 'button',
                             isDisabled: function (view, rowIndex, colIndex, item, record) {
                                 if (record.get('TotalTimesheet') > 0) return true;
+                                if (record.get('TotalAcceptedProject') > 0) return true;
                                 if (paramsView.isAdminRole) return false;
                                 if (paramsView.isManagerRole) return true;
                                 return false;

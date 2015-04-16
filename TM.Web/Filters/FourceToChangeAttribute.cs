@@ -31,19 +31,27 @@ namespace PJ_CWN019.TM.Web.Filters
                 {
                     var user = (from u in session.Query<User>()
                                 where u.EmployeeID.ToString() == WebSecurity.CurrentUserName
-                                select u).Single();
-
-                    if (!user.LastPasswordChangedDate.HasValue)
+                                select u).SingleOrDefault();
+                    if (user == null)
                     {
-                        UrlHelper urlHelper = new UrlHelper(filterContext.RequestContext);
-                        filterContext.HttpContext.Response.Redirect(urlHelper.Action(
-                            "ChangePassword", "Account",
-                            new ChangePasswordView
-                            {
-                                NewPassword = "",
-                                OldPassword = user.EmployeeID.ToString(),
-                                ConfirmNewPassword = "",
-                            }), true);
+                        WebSecurity.Logout();
+                    }
+                    else
+                    {
+                        if (!user.LastPasswordChangedDate.HasValue)
+                        {
+                            UrlHelper urlHelper = new UrlHelper(filterContext.RequestContext);
+                            var action = urlHelper.Action(
+                                "ChangePassword", "Account",
+                                new ChangePasswordView
+                                {
+                                    NewPassword = "",
+                                    OldPassword = user.EmployeeID.ToString(),
+                                    ConfirmNewPassword = "",
+                                });
+
+                            filterContext.HttpContext.Response.Redirect(action, true);
+                        }
                     }
                 }
             }

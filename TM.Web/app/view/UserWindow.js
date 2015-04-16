@@ -174,6 +174,7 @@
                     validFlag: true,
                     maxLength: 10,
                     minLength: 3,
+                    maskRe: /^\d+$/,
                     validator: function () {
                         return this.validFlag;
                     },
@@ -190,37 +191,37 @@
                                 me.validate();
                             }
 
-                            if (checkDuplicate) {
-                                if (newValue > 999) {
-                                    me.setLoading(true);
-                                    me.setReadOnly(true);
-                                    addAction.setDisabled(true);
+                            //if (checkDuplicate) {
+                            //    if (newValue > 999) {
+                            //        me.setLoading(true);
+                            //        me.setReadOnly(true);
+                            //        addAction.setDisabled(true);
 
-                                    Ext.Ajax.request({
-                                        url: paramsView.urlCheckDuplicatedEmployeeID + '?employeeID=' + newValue,
-                                        success: function (response) {
-                                            var result = Ext.decode(response.responseText);
-                                            me.validFlag = result.valid ? true : 'รหัสพนักงาน / Employee ID นี้ มีอยู่ในระบบแล้ว!';
-                                            me.validate();
-                                            me.setLoading(false);
-                                            me.setReadOnly(false);
-                                            addAction.setDisabled(false);
-                                        },
-                                        failure: function (transport) {
-                                            me.setLoading(false);
-                                            me.setReadOnly(false);
-                                            addAction.setDisabled(false);
-                                            Ext.MessageBox.show({
-                                                title: TextLabel.errorAlertTitle,
-                                                msg: "เกิดข้อผิดพลาดในขั้นตอนการตรวจสอบ รหัสพนักงาน / Employee ID ซ้ำ " + transport.responseText,
-                                                //width: 300,
-                                                buttons: Ext.MessageBox.OK,
-                                                icon: Ext.MessageBox.ERROR
-                                            });
-                                        }
-                                    });
-                                }
-                            }
+                            //        Ext.Ajax.request({
+                            //            url: paramsView.urlCheckDuplicatedEmployeeID + '?employeeID=' + newValue,
+                            //            success: function (response) {
+                            //                var result = Ext.decode(response.responseText);
+                            //                me.validFlag = result.valid ? true : 'รหัสพนักงาน / Employee ID นี้ มีอยู่ในระบบแล้ว!';
+                            //                me.validate();
+                            //                me.setLoading(false);
+                            //                me.setReadOnly(false);
+                            //                addAction.setDisabled(false);
+                            //            },
+                            //            failure: function (transport) {
+                            //                me.setLoading(false);
+                            //                me.setReadOnly(false);
+                            //                addAction.setDisabled(false);
+                            //                Ext.MessageBox.show({
+                            //                    title: TextLabel.errorAlertTitle,
+                            //                    msg: "เกิดข้อผิดพลาดในขั้นตอนการตรวจสอบ รหัสพนักงาน / Employee ID ซ้ำ " + transport.responseText,
+                            //                    //width: 300,
+                            //                    buttons: Ext.MessageBox.OK,
+                            //                    icon: Ext.MessageBox.ERROR
+                            //                });
+                            //            }
+                            //        });
+                            //    }
+                            //}
                         }
                     }
                 }, {
@@ -240,13 +241,15 @@
                     id: 'NameEN',
                     name: 'NameEN',
                     //colspan: 1,
-                    maxLength: 100
+                    maxLength: 100,
+                    maskRe: /^([a-zA-Z])+$/
                 }, {
                     fieldLabel: 'นามสกุล (อังกฤษ) / Last Name (EN) <span class="required">*</span>',
                     id: 'LastEN',
                     name: 'LastEN',
                     //colspan: 1,
-                    maxLength: 100
+                    maxLength: 100,
+                    maskRe: /^([a-zA-Z])+$/
                 }, {
                     fieldLabel: 'ชื่อเล่น / Nickname',
                     id: 'Nickname',
@@ -255,13 +258,13 @@
                     maxLength: 30,
                     allowBlank: true
                 }, {
-                    fieldLabel: 'อีเมล์ / Email',
+                    fieldLabel: 'อีเมล์ / Email <span class="required">*</span>',
                     id: 'Email',
                     name: 'Email',
                     vtype: 'email',
                     //colspan: 1,
                     maxLength: 100,
-                    allowBlank: true
+                    allowBlank: false
                 }, {
                     xtype: 'combo',
                     fieldLabel: 'ตำแหน่ง / Position <span class="required">*</span>',

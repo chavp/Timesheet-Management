@@ -10,6 +10,7 @@ namespace PJ_CWN019.TM.Web.Models
         public ProjectView()
         {
             InitMembers = new List<long>();
+
         }
 
         public long ID { get; set; }
@@ -33,6 +34,7 @@ namespace PJ_CWN019.TM.Web.Models
         public DateTime? WarrantyStartDate { get; set; }
         public DateTime? WarrantyEndDate { get; set; }
         public decimal EstimateProjectValue { get; set; }
+        public decimal ProjectValue { get; set; }
         public List<long> InitMembers { get; set; }
 
         public DateTime? LatestUpdateProgress { get; set; }
@@ -61,6 +63,16 @@ namespace PJ_CWN019.TM.Web.Models
         public long StatusID { get; set; }
 
         public int Progress { get; set; }
+        public string StateOfProgress { get; set; }
         public bool IsOwner { get; set; }
+
+        public int ProjectDeliveryPhaseCount { get; set; }
+
+        public List<ProjectDeliveryPhaseView> ProjectDeliveryPhases { get; set; }
+
+        public bool IsProjectAccept { get; set; }
+        public int TotalAcceptedProject { get; set; }
+
+
     }
 }

@@ -1,0 +1,183 @@
+﻿@{
+    ViewBag.Title = "StrategyConfiguration";
+}
+
+@Html.Partial("_Template", new PJ_CWN019.TM.Web.Models.TemplateView
+    {
+        MainPanelID = "strategyConfigurationPanel",
+        MainIcon = "glyphicon glyphicon-usd",
+        MainTitle = "Strategy Configuration",
+        SubIcon = "glyphicon glyphicon-king",
+        SubTitle = "Strategy Configuration"
+    })
+
+@section scripts{
+    <script>
+        Ext.Loader.setPath('Ext.ux', '@Url.Content("~/Scripts/ext-4.2.1-gpl/ux")');
+
+        paramsView.urlSaveStrategyConfiguration = '@Url.Content("~/ProjectPortfolio/SaveStrategyConfiguration")';
+
+        var presaleLv1_name = '@ViewBag.PRESALE_LV_1_NAME';
+        var presaleLv2_name = '@ViewBag.PRESALE_LV_2_NAME';
+
+        var presaleLv1 = '@ViewBag.PRESALE_LV_1';
+        var presaleLv2 = '@ViewBag.PRESALE_LV_2';
+
+        var presaleLv1_id = '@ViewBag.PRESALE_LV_1_ID';
+        var presaleLv2_id = '@ViewBag.PRESALE_LV_2_ID';
+
+        Ext.onReady(function () {
+
+            var panelHeight = 180;
+
+            var panel = Ext.create('Ext.panel.Panel', {
+                renderTo: 'strategyConfigurationPanel',
+                //layout: 'hbox',
+                height: panelHeight,
+                width: '100%',
+                border: 1,
+                style: { borderColor: '#000000' },
+                defaults: {
+                    frame: true,
+                    split: false
+                },
+                items: [
+                    {
+                        xtype: 'fieldset',
+                        layout: 'vbox',
+                        title: '<h5>Pre-Sale Configuration</h5>',
+                        border: false,
+                        height: '100%',
+                        width: '100%',
+                        defaults: {
+                            labelWidth: 500,
+                            allowBlank: true,
+                            labelAlign: 'right'
+                        },
+                        bodyPadding: 10,
+                        items: [
+                            {
+                                xtype: 'fieldcontainer',
+                                fieldLabel: 'Notify in Pre-Sale Phase Level 1',
+                                layout: 'hbox',
+                                items: [{
+                                    xtype: 'numberfield',
+                                    id: 'PreSalePhaseLevel1',
+                                    name: 'PreSalePhaseLevel1',
+                                    minValue: 0,
+                                    maxValue: 100,
+                                    decimalPrecision: 0,
+                                    width: 70,
+                                    fieldCls: 'a-form-num-field',
+                                    step: 1,
+                                    allowBlank: true,
+                                    value: presaleLv1
+                                },
+                                {
+                                    xtype: 'displayfield',
+                                    margin: '0 5 0 5',
+                                    value: '%'
+                                }]
+                            },
+                            {
+                                xtype: 'fieldcontainer',
+                                fieldLabel: 'Notify in Pre-Sale Phase Level 2',
+                                layout: 'hbox',
+                                items: [{
+                                    xtype: 'numberfield',
+                                    id: 'PreSalePhaseLevel2',
+                                    name: 'PreSalePhaseLevel2',
+                                    minValue: 0,
+                                    maxValue: 100,
+                                    decimalPrecision: 0,
+                                    width: 70,
+                                    fieldCls: 'a-form-num-field',
+                                    step: 1,
+                                    allowBlank: true,
+                                    value: presaleLv2
+                                },
+                                {
+                                    xtype: 'displayfield',
+                                    margin: '0 5 0 5',
+                                    value: '%'
+                                }]
+                            }
+                        ]
+                    }
+                ],
+                buttonAlign: 'center',
+                border: 0,
+                buttons: [
+                    {
+                        text: TextLabel.saveActionText,
+                        handler: function (btn) {
+                            panel.setLoading(true);
+
+                            var limitRatio_1 = Ext.getCmp("PreSalePhaseLevel1").value,
+                                limitRatio_2 = Ext.getCmp("PreSalePhaseLevel2").value;
+
+                            var updatePresaleLv1 = Ext.create('widget.projectthreshold', {
+                                ID: presaleLv1_id,
+                                Name: presaleLv1_name,
+                                LimitRatio: limitRatio_1
+                            });
+
+                            var updatePresaleLv2 = Ext.create('widget.projectthreshold', {
+                                ID: presaleLv2_id,
+                                Name: presaleLv2_name,
+                                LimitRatio: limitRatio_2
+                            });
+
+                            Ext.Ajax.request({
+                                url: paramsView.urlSaveStrategyConfiguration,    // where you wanna post
+                                success: function (transport) {
+                                    panel.setLoading(false);
+                                    var response = Ext.decode(transport.responseText);
+                                    if (response.success) {
+                                        Ext.MessageBox.show({
+                                            title: messagesForm.successTitle,
+                                            msg: messagesForm.successMsg,
+                                            //width: 300,
+                                            buttons: Ext.MessageBox.OK,
+                                            icon: Ext.MessageBox.INFO,
+                                            fn: function (btn) {
+                                                
+                                            }
+                                        });
+                                    } else {
+                                        Ext.MessageBox.show({
+                                            title: messagesForm.errorAlertTitle,
+                                            msg: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล <br/>' + response.message,
+                                            //width: 300,
+                                            buttons: Ext.MessageBox.OK,
+                                            icon: Ext.MessageBox.ERROR
+                                        });
+                                    }
+
+                                },   // function called on success
+                                failure: function (transport) {
+                                    panel.setLoading(false);
+                                    var errorMsg = "";
+                                    if (transport.responseText.indexOf('anti-forgery') > 0) {
+                                        errorMsg = "anti-forgery กรุณากดเข้า page นี้ใหม่";
+                                    }
+                                    Ext.MessageBox.show({
+                                        title: messagesForm.errorAlertTitle,
+                                        msg: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล <br/>' + errorMsg,
+                                        //width: 300,
+                                        buttons: Ext.MessageBox.OK,
+                                        icon: Ext.MessageBox.ERROR
+                                    });
+                                },
+                                jsonData: {
+                                    presaleLv1: updatePresaleLv1.data,
+                                    presaleLv2: updatePresaleLv2.data
+                                }  // your json data
+                            });
+                        }
+                    }
+                ]
+            });
+        });
+    </script>
+}

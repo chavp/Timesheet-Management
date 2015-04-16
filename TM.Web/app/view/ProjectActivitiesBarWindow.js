@@ -50,7 +50,6 @@ Ext.define('TM.view.ProjectActivitiesBarWindow', {
         var self = this;
         self.callParent(arguments);
         
-
         var margin = { top: 20, right: 0, bottom: 60, left: 80 },
                     width = 1150 - margin.left - margin.right,
                     height = 500 - margin.top - margin.bottom;
@@ -130,7 +129,7 @@ Ext.define('TM.view.ProjectActivitiesBarWindow', {
                 .attr("y", 6)
                 .attr("dy", ".71em")
                 .style("text-anchor", "end")
-                .text("Effort (h)");
+                .text("Effort (hrs)");
 
             var colors = d3.scale.category20().domain(roles);
 
@@ -175,11 +174,14 @@ Ext.define('TM.view.ProjectActivitiesBarWindow', {
                 .style("text-anchor", "end")
                 .text(function (d) { return d; });
 
-            console.log(data);
+            //console.log(data);
         }
         
         var url_api = paramsView.urlGetEffortTimesheetItem + "?projectCode=" + self.projectCode;
+
+        self.setLoading(true);
         d3.json(url_api, function (error, data) {
+            self.setLoading(false);
             if (error) {
                 console.log(error);
             } else {

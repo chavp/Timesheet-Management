@@ -9,5 +9,6 @@ namespace Cwn.PM.Loggers
     public class Feedback : Log
     {
         public virtual double Rating { get; set; }
+        public virtual string Note { get; set; }
     }
 }

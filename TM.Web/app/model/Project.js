@@ -25,10 +25,18 @@
         { name: 'WarrantyEndDate', type: 'date', dateFormat: 'MS' },
 
         { name: 'EstimateProjectValue', type: 'float' },
+        { name: 'ProjectValue', type: 'float' },
         { name: 'Progress', type: 'int' },
+        { name: 'StateOfProgress' },
         { name: 'LatestUpdateProgress', type: 'date', dateFormat: 'MS' },
         { name: 'TotalTimesheet', type: 'int' },
-        { name: 'IsOwner', type: 'boolean' }
+        { name: 'IsOwner', type: 'boolean' },
+        { name: 'ProjectDeliveryPhaseCount', type: 'int' },
+        { name: 'IsProjectAccept', type: 'boolean' },
+        { name: 'TotalAcceptedProject', type: 'int' }
+    ],
+    associations: [
+        { type: 'hasMany', model: 'ProjectDeliveryPhase', name: 'ProjectDeliveryPhases' }
     ],
     proxy: {
         type: 'rest',

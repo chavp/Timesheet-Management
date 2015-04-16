@@ -92,7 +92,7 @@
             defaultType: 'textfield',
             bodyStyle: 'padding: 6px',
             fieldDefaults: {
-                labelWidth: 120,
+                labelWidth: 130,
                 allowBlank: false,
                 labelAlign: 'right'
             },

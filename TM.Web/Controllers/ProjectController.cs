@@ -30,7 +30,7 @@ namespace PJ_CWN019.TM.Web.Controllers
     [ValidateAntiForgeryTokenOnAllPosts]
     public class ProjectController : Controller
     {
-        string dateFormat = "dd/MM/yyyy";
+        string dateFormat = ConstPage.FormatDefault;
         CultureInfo forParseDate = new CultureInfo("en-US");
 
         ISessionFactory _sessionFactory = null;
@@ -94,15 +94,20 @@ namespace PJ_CWN019.TM.Web.Controllers
 
             using (var session = _sessionFactory.OpenSession())
             {
+                var manager = GetCurrentUser(session);
+
                 if (isOwner)
                 {
-                    var manager = (from u in session.Query<User>()
-                                             where u.EmployeeID.ToString() == WebSecurity.CurrentUserName
-                                             select u).First();
-
                     var prjQuery = (from p in session.Query<Project>()
                                     join m in session.Query<ProjectMember>() on p equals m.Project
+                                    let pg = (from pg in session.Query<ProjectProgress>() where p == pg.Project select pg).SingleOrDefault()
                                     let totalTimesheet = (from t in session.Query<Timesheet>() where t.Project == p select t).Count()
+                                    let isProjectAccept = ((from ap in session.Query<AcceptedProject>() 
+                                                            where ap.AcceptBy == manager
+                                                            && ap.Project == p select ap).Count() > 0)?true:false
+                                    let totalAcceptedProject = (from t in session.Query<AcceptedProject>()
+                                                                where t.Project == p
+                                                                select t).Count()
                                     where p.NameTH.Contains(projectName)
                                     && p.Code.Contains(projectCode)
                                     && m.User == manager
@@ -110,7 +115,10 @@ namespace PJ_CWN019.TM.Web.Controllers
                                     select new { 
                                         Prj = p, 
                                         Members = p.Members.Count, 
-                                        TotalTimesheet = totalTimesheet 
+                                        TotalTimesheet = totalTimesheet,
+                                        Prg = pg,
+                                        IsProjectAccept = isProjectAccept,
+                                        TotalAcceptedProject = totalAcceptedProject
                                     });
 
                     if (!string.IsNullOrEmpty(query))
@@ -130,21 +138,28 @@ namespace PJ_CWN019.TM.Web.Controllers
 
                     foreach (var project in prjQuery.Skip(start).Take(limit))
                     {
-                        var vm = project.Prj.ToViewModel(project.Members, project.TotalTimesheet);
+                        var vm = project.Prj.ToViewModel(project.Prg, project.Members, project.TotalTimesheet);
+
+                        var projectDeliveryPhases = (from pd in session.Query<ProjectDeliveryPhase>()
+                                                     where pd.Project == project.Prj
+                                                     select pd).ToList();
+
+                        vm.ProjectDeliveryPhaseCount = projectDeliveryPhases.Count();
+                        vm.ProjectDeliveryPhases = projectDeliveryPhases.ToViewModel();
+                        vm.IsProjectAccept = project.IsProjectAccept;
+                        vm.TotalAcceptedProject = project.TotalAcceptedProject;
 
                         viewList.Add(vm);
+
                     }
                 }
                 else
                 {
 
-                    var manager = (from u in session.Query<User>()
-                                   where u.EmployeeID.ToString() == WebSecurity.CurrentUserName
-                                   select u).Single();
-
                     var managerDepartment = manager.Department;
 
                     var prjQuery = (from p in session.Query<Project>()
+                                    let pg = (from pg in session.Query<ProjectProgress>() where p == pg.Project select pg).SingleOrDefault()
                                     let members = (from m in session.Query<ProjectMember>()
                                                    where m.Project == p
                                                    && m.User.Department == managerDepartment
@@ -154,7 +169,15 @@ namespace PJ_CWN019.TM.Web.Controllers
                                                  && pm.Project == p
                                                  && pm.ProjectRole.IsOwner
                                                  select pm).FirstOrDefault()
-                                    let totalTimesheet = (from t in session.Query<Timesheet>() where t.Project == p select t).Count()
+                                    let totalTimesheet = (from t in session.Query<Timesheet>() 
+                                                          where t.Project == p select t).Count()
+                                    let isProjectAccept = ((from ap in session.Query<AcceptedProject>()
+                                                            where ap.AcceptBy == manager
+                                                            && ap.Project == p
+                                                            select ap).Count() > 0) ? true : false
+                                    let totalAcceptedProject = (from t in session.Query<AcceptedProject>()
+                                                         where t.Project == p
+                                                         select t).Count()
                                     where p.NameTH.Contains(projectName)
                                     && p.Code.Contains(projectCode)
                                     //&& members > 0
@@ -163,7 +186,10 @@ namespace PJ_CWN019.TM.Web.Controllers
                                         Members = members, 
                                         TotalMembers = p.Members.Count, 
                                         TotalTimesheet = totalTimesheet,
-                                        Owner = owner
+                                        Owner = owner,
+                                        Prg = pg,
+                                        IsProjectAccept = isProjectAccept,
+                                        TotalAcceptedProject = totalAcceptedProject
                                     });
 
                     if (isForDepartment)
@@ -200,8 +226,19 @@ namespace PJ_CWN019.TM.Web.Controllers
 
                     foreach (var project in prjQuery.Skip(start).Take(limit))
                     {
-                        var vm = project.Prj.ToViewModel(project.TotalMembers, project.TotalTimesheet);
+                        var vm = project.Prj.ToViewModel(project.Prg, project.TotalMembers, project.TotalTimesheet);
+
                         vm.IsOwner = (project.Owner != null) ? true : false;
+
+                        var projectDeliveryPhases = (from pd in session.Query<ProjectDeliveryPhase>()
+                                                     where pd.Project == project.Prj
+                                                     select pd).ToList();
+
+                        vm.ProjectDeliveryPhaseCount = projectDeliveryPhases.Count();
+                        vm.ProjectDeliveryPhases = projectDeliveryPhases.ToViewModel();
+                        vm.IsProjectAccept = project.IsProjectAccept;
+                        vm.TotalAcceptedProject = project.TotalAcceptedProject;
+
                         viewList.Add(vm);
                     }
                 }
@@ -229,21 +266,35 @@ namespace PJ_CWN019.TM.Web.Controllers
 
             using (var session = _sessionFactory.OpenSession())
             {
-                var owner = (from u in session.Query<User>()
-                                         where u.EmployeeID.ToString() == WebSecurity.CurrentUserName
-                                         select u).First();
+                var owner = GetCurrentUser(session);
 
                 var prjQuery = (from p in session.Query<Project>()
+                                let pg  = (from pg in session.Query<ProjectProgress>() where p == pg.Project select pg).FirstOrDefault()
+                                let totalTimesheet = (from t in session.Query<Timesheet>() where t.Project == p select t).Count()
                                 let cPM = (from m in session.Query<ProjectMember>()
                                            where m.User == owner 
                                            && m.Project == p 
                                            && m.ProjectRole.IsOwner
                                             select m).Count()
-                                //let members = p.Members.Count
+                                let isProjectAccept = ((from ap in session.Query<AcceptedProject>()
+                                                        where ap.AcceptBy == owner
+                                                        && ap.Project == p
+                                                        select ap).Count() > 0) ? true : false
+                                let totalAcceptedProject = (from t in session.Query<AcceptedProject>()
+                                                            where t.Project == p
+                                                            select t).Count()
                                 where p.NameTH.Contains(projectName)
                                 && p.Code.Contains(projectCode)
                                 && cPM > 0
-                                select new { Prj = p, Members = p.Members.Count });
+                                //let members = p.Members.Count
+                                select new { 
+                                    Prj = p, 
+                                    Members = p.Members.Count,
+                                    TotalTimesheet = totalTimesheet,
+                                    Prg = pg,
+                                    IsProjectAccept = isProjectAccept,
+                                    TotalAcceptedProject = totalAcceptedProject
+                                });
 
                 if (!string.IsNullOrEmpty(query))
                 {
@@ -260,7 +311,18 @@ namespace PJ_CWN019.TM.Web.Controllers
                 
                 foreach (var project in prjQuery.Skip(start).Take(limit))
                 {
-                    var vm = project.Prj.ToViewModel(project.Members);
+                    var vm = project.Prj.ToViewModel(project.Prg, project.Members);
+
+                    var projectDeliveryPhases = (from pd in session.Query<ProjectDeliveryPhase>()
+                                                 where pd.Project == project.Prj
+                                                 select pd).ToList();
+
+                    vm.TotalTimesheet = project.TotalTimesheet;
+                    vm.ProjectDeliveryPhaseCount = projectDeliveryPhases.Count();
+                    vm.ProjectDeliveryPhases = projectDeliveryPhases.ToViewModel();
+                    vm.IsProjectAccept = project.IsProjectAccept;
+                    vm.TotalAcceptedProject = project.TotalAcceptedProject;
+
                     viewList.Add(vm);
                 }
             }
@@ -949,12 +1011,24 @@ namespace PJ_CWN019.TM.Web.Controllers
             }
         }
 
+        private void removeAllProjectDeliveryPhase(Project theProject, ISession session)
+        {
+            var projectDeliveryPhases = (from pd in session.Query<ProjectDeliveryPhase>()
+                                         where pd.Project == theProject
+                                         select pd).ToList();
+            foreach (var item in projectDeliveryPhases)
+            {
+                session.Delete(item);
+            }
+        }
+
         [HttpPost]
         [Authorize(Roles = ConstAppRoles.Admin + ", " + ConstAppRoles.ProjectOwner)]
         public JsonResult SaveProject(ProjectView projectView)
         {
             var success = false;
             var msg = string.Empty;
+            var dupMessage = "พบชื่อรหัสโครงการนี้อยู่ในระบบแล้ว กรุณาระบุโครงการใหม่";
 
             using (var session = _sessionFactory.OpenSession())
             using (var transaction = session.BeginTransaction())
@@ -966,10 +1040,23 @@ namespace PJ_CWN019.TM.Web.Controllers
                 var cust = (from c in session.Query<Customer>() 
                             where c.ID == projectView.CustomerID select c)
                             .FirstOrDefault();
-                
+
+                Project theProject = null;
+
                 if (projectView.ID <= 0)
                 {
-                    var newProject = new Project
+                    // check Dup
+                    var dup = (from d in session.Query<Project>()
+                               where d.Code == projectView.Code
+                               select d).FirstOrDefault();
+
+                    if (dup != null)
+                    {
+                        msg = dupMessage;
+                        return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+                    }
+
+                    theProject = new Project
                     {
                         Code = projectView.Code,
                         NameTH = projectView.NameTH,
@@ -985,6 +1072,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                         WarrantyStartDate = projectView.WarrantyStartDate,
                         WarrantyEndDate = projectView.WarrantyEndDate,
                         EstimateProjectValue = projectView.EstimateProjectValue,
+                        ProjectValue = projectView.ProjectValue
                     };
 
                     foreach (var iniMemberID in projectView.InitMembers)
@@ -992,13 +1080,31 @@ namespace PJ_CWN019.TM.Web.Controllers
                         var iniMemebr = (from initM in session.Query<InitialMember>()
                                          where initM.ID == iniMemberID
                                          select initM).Single();
-                        newProject.AddMemeber(iniMemebr.User, iniMemebr.ProjectRole);
+                        theProject.AddMemeber(iniMemebr.User, iniMemebr.ProjectRole);
                     }
-                    session.Save(newProject);
+
+                    session.Save(theProject);
+
+                    //Add Project Cost Acc
+                    var prjCostAcc = new ProjectCostAccount(theProject);
+                    session.Save(prjCostAcc);
                 }
                 else
                 {
-                    var theProject = (from ps in session.Query<Project>()
+
+                    // check Dup
+                    var dup = (from d in session.Query<Project>()
+                               where d.Code == projectView.Code
+                               && d.ID != projectView.ID
+                               select d).FirstOrDefault();
+
+                    if (dup != null)
+                    {
+                        msg = dupMessage;
+                        return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+                    }
+
+                    theProject = (from ps in session.Query<Project>()
                                      where ps.ID == projectView.ID
                                      select ps).Single();
 
@@ -1015,10 +1121,55 @@ namespace PJ_CWN019.TM.Web.Controllers
                     theProject.WarrantyStartDate = projectView.WarrantyStartDate;
                     theProject.WarrantyEndDate = projectView.WarrantyEndDate;
                     theProject.EstimateProjectValue = projectView.EstimateProjectValue;
+                    theProject.ProjectValue = projectView.ProjectValue;
                     theProject.Status = theStatus;
-
+                    
                     session.Update(theProject);
+
+                    //remove all ProjectDeliveryPhase
+                    removeAllProjectDeliveryPhase(theProject, session);
+
+                    if (projectView.ProjectDeliveryPhases != null)
+                    {
+                        foreach (var projectDeliveryPhase in projectView.ProjectDeliveryPhases)
+                        {
+
+                            var updateY = (from d in session.Query<ProjectDeliveryPhase>()
+                                           where d.ID == projectDeliveryPhase.ID
+                                           select d).SingleOrDefault();
+
+                            StatusOfProjectDeliveryPhase status = StatusOfProjectDeliveryPhase.InProgress;
+                            Enum.TryParse<StatusOfProjectDeliveryPhase>(
+                                projectDeliveryPhase.StatusOfProjectDeliveryPhase, out status);
+
+                            if (updateY == null)
+                            {
+                                updateY = new ProjectDeliveryPhase(theProject, projectDeliveryPhase.DeliveryPhaseDate);
+                                updateY.StatusOfProjectDeliveryPhase = status;
+                                session.Save(updateY);
+                            }
+                            else
+                            {
+                                updateY.DeliveryPhaseDate = projectDeliveryPhase.DeliveryPhaseDate;
+                                updateY.StatusOfProjectDeliveryPhase = status;
+                                session.Update(updateY);
+                            }
+                        }
+                    }
+                
                 }
+
+                // update progress
+                var prjProgress = (from p in session.Query<ProjectProgress>()
+                                   where p.Project == theProject
+                                   select p).SingleOrDefault();
+
+                if (prjProgress == null)
+                {
+                    prjProgress = new ProjectProgress(theProject);
+                    session.Save(prjProgress);
+                }
+                prjProgress.UpdateProgress(projectView.Progress, projectView.StateOfProgress);
 
                 transaction.Commit();
                 success = true;
@@ -1069,13 +1220,27 @@ namespace PJ_CWN019.TM.Web.Controllers
                 var validateResult = validateHaveTimesheetInProjectCode(projectID, session);
                 if (validateResult != null) return validateResult;
 
+                var currentUser = GetCurrentUser(session);
+
                 var prj = (from x in session.Query<Project>()
                            where x.ID == projectID
                            select x).Single();
 
-                
+                var prjProgress = (from p in session.Query<ProjectProgress>()
+                                   where p.Project == prj
+                                   select p).SingleOrDefault();
+
+                removeAllProjectDeliveryPhase(prj, session);
+
+                session.Delete(prjProgress);
+                var prjCostAcc = (from p in session.Query<ProjectCostAccount>()
+                                  where p.Project == prj
+                                  select p).SingleOrDefault();
+
+                session.Delete(prjCostAcc);
+
                 session.Delete(prj);
-                
+
                 transaction.Commit();
             }
 
@@ -1617,6 +1782,198 @@ namespace PJ_CWN019.TM.Web.Controllers
             }
 
             return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+        }
+
+        public JsonResult GetProjectDeliveryPhases(long projectID)
+        {
+            var viewList = new List<ProjectDeliveryPhaseView>();
+
+            using (var session = _sessionFactory.OpenStatelessSession())
+            {
+                var q = from pd in session.Query<ProjectDeliveryPhase>()
+                        join p in session.Query<Project>() on pd.Project equals p
+                        where p.ID == projectID
+                        orderby pd.DeliveryPhaseDate
+                        select pd;
+
+                foreach (var p in q)
+                {
+                    viewList.Add(new ProjectDeliveryPhaseView
+                    {
+                        ID = p.ID,
+                        ProjectID = projectID,
+                        DeliveryPhaseDate = p.DeliveryPhaseDate,
+                        StatusOfProjectDeliveryPhase = p.StatusOfProjectDeliveryPhase.ToString()
+                    });
+                }
+            }
+
+            return Json(viewList, JsonRequestBehavior.AllowGet);
+        }
+        [HttpPost]
+        public JsonResult SaveProjectDeliveryPhase(ProjectDeliveryPhaseView projectDeliveryPhaseView)
+        {
+            var success = false;
+            var msg = string.Empty;
+            var targetMsg = "ช่วงส่งมอบโครงการ";
+            var dupMessage = string.Format("พบวันที่{0}นี้อยู่ในระบบแล้ว กรุณาระบุวันที่ใหม่", targetMsg);
+            var successMessage = string.Format("การบันทึก{0}การเสร็จสมบูรณ์", targetMsg);
+
+            using (var session = _sessionFactory.OpenSession())
+            using (var transaction = session.BeginTransaction())
+            {
+                var project = (from x in session.Query<Project>() 
+                               where x.ID == projectDeliveryPhaseView.ProjectID
+                                   select x).Single();
+                // Save
+                if (projectDeliveryPhaseView.ID <= 0)
+                {
+                    // check Dup
+                    var y = (from x in session.Query<ProjectDeliveryPhase>()
+                             where x.DeliveryPhaseDate == projectDeliveryPhaseView.DeliveryPhaseDate
+                             && x.Project == project
+                             select x).FirstOrDefault();
+
+                    if (y != null)
+                    {
+                        msg = dupMessage;
+                        return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+                    }
+                    else
+                    {
+                        var newY = new ProjectDeliveryPhase(project, projectDeliveryPhaseView.DeliveryPhaseDate);
+                        
+                        session.Save(newY);
+                    }
+                }
+                // Update
+                else
+                {
+                    // check Dup
+                    var y = (from x in session.Query<ProjectDeliveryPhase>()
+                             where x.DeliveryPhaseDate == projectDeliveryPhaseView.DeliveryPhaseDate
+                                && x.Project == project
+                               && x.ID != projectDeliveryPhaseView.ID
+                             select x).FirstOrDefault();
+
+                    if (y != null)
+                    {
+                        msg = dupMessage;
+                        return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+                    }
+                    else
+                    {
+                        var updateY = (from d in session.Query<ProjectDeliveryPhase>()
+                                       where d.ID == projectDeliveryPhaseView.ID
+                                       select d).Single();
+
+                        updateY.DeliveryPhaseDate = projectDeliveryPhaseView.DeliveryPhaseDate;
+                        StatusOfProjectDeliveryPhase status;
+                        if (Enum.TryParse<StatusOfProjectDeliveryPhase>(
+                            projectDeliveryPhaseView.StatusOfProjectDeliveryPhase, out status))
+                        {
+                            updateY.StatusOfProjectDeliveryPhase = status; 
+                        }
+
+                        session.Update(updateY);
+                    }
+                }
+
+                transaction.Commit();
+                success = true;
+                msg = successMessage;
+            }
+
+            return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+        }
+        [HttpPost]
+        public JsonResult DeleteProjectDeliveryPhase(int id)
+        {
+            var success = false;
+            var msg = string.Empty;
+            var targetMsg = "ช่วงส่งมอบโครงการ";
+
+            using (var session = _sessionFactory.OpenSession())
+            using (var transaction = session.BeginTransaction())
+            {
+                var y = (from x in session.Query<ProjectDeliveryPhase>()
+                         where x.ID == id
+                         select x).Single();
+
+                session.Delete(y);
+
+                transaction.Commit();
+                success = true;
+                msg = string.Format("ลบ{0}เสร็จสมบูรณ์", targetMsg);
+            }
+
+            return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult AcceptedProject(long projectID)
+        {
+            var success = false;
+            var msg = string.Empty;
+            var targetMsg = "ตอบรับโครงการ";
+
+            using (var session = _sessionFactory.OpenSession())
+            using (var transaction = session.BeginTransaction())
+            {
+                var currentUser = GetCurrentUser(session);
+
+                var y = (from x in session.Query<Project>()
+                         where x.ID == projectID
+                         select x).Single();
+
+                var accepted = new AcceptedProject(y, currentUser);
+
+                session.Save(accepted);
+
+                transaction.Commit();
+                success = true;
+                msg = string.Format("ดำเนินการ{0}เสร็จสมบูรณ์", targetMsg);
+            }
+
+            return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult UnacceptedProject(long projectID)
+        {
+            var success = false;
+            var msg = string.Empty;
+            var targetMsg = "ยกเลิกการตอบรับโครงการ";
+
+            using (var session = _sessionFactory.OpenSession())
+            using (var transaction = session.BeginTransaction())
+            {
+                var currentUser = GetCurrentUser(session);
+
+                var y = (from x in session.Query<Project>()
+                         where x.ID == projectID
+                         select x).Single();
+
+                var accepted = (from a in session.Query<AcceptedProject>()
+                                where a.AcceptBy == currentUser
+                                && a.Project == y
+                                select a).Single();
+
+                session.Delete(accepted);
+
+                transaction.Commit();
+                success = true;
+                msg = string.Format("ดำเนินการ{0}เสร็จสมบูรณ์", targetMsg);
+            }
+
+            return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+        }
+
+        private User GetCurrentUser(ISession session)
+        {
+            return (from u in session.Query<User>()
+                    where u.EmployeeID.ToString() == WebSecurity.CurrentUserName
+                    select u).Single();
         }
         //END WEB API Phase II *************************************************************
     }

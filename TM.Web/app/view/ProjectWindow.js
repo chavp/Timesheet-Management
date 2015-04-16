@@ -189,6 +189,7 @@
                         emptyText: 'รหัส / ID',
                         flex: 1,
                         maxLength: 50,
+                        maskRe: /^\d+$/,
                         listeners: {
                             specialkey: function (field, e) {
                                 if (e.getKey() == e.ENTER) {
@@ -615,7 +616,7 @@
 
                                                     Ext.MessageBox.wait("กำลังบันทึกข้อมูล...", 'กรุณารอ');
                                                     Ext.Ajax.request({
-                                                        url: paramsView.urlSaveProjectRole,    // where you wanna post
+                                                        url: paramsView.urlSaveMemberProjectRole,    // where you wanna post
                                                         success: function (transport) {
                                                             Ext.MessageBox.hide();
                                                             var response = Ext.decode(transport.responseText);

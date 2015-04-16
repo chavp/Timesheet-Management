@@ -110,7 +110,7 @@ TextLabel = (function () {
         projectMainTaskTabTitle: '<i class="glyphicon glyphicon-tasks"></i> ' + mainTaskTH + " / " + mainTaskEN,
         projectProjectRoleTabTitle: '<i class="glyphicon glyphicon-hand-right"></i> ' + projectRoleTH + " / " + projectRoleEN,
 
-        customersTabTitle: heartIcon + ' ' + customer + 's',
+        customersTabTitle: heartIcon + ' ' + customerTH + ' / ' + customer + 's',
 
         orderColumnText: orderTH + "<br/>" + orderEN,
         orderLabel: orderTH + " / " + orderEN,
@@ -158,7 +158,9 @@ TextLabel = (function () {
         customerContactEmpaty: "ตัวอย่าง: ที่อยู่, เบอร์โทรติดต่อ, email, fax, facebook, website",
         
         industryTypeColumtextText: typeTH + industryTH + "<br/>" + industry + " " + type,
-        industryTypeFieldLabel: typeTH + industryTH + " / " + industry + " " + type
+        industryTypeFieldLabel: typeTH + industryTH + " / " + industry + " " + type,
+
+        addProjectDeliveryPhaseDateTitle: "เพิ่มช่วงการส่งมอบโครงการ / Add Project Delivery Phase Date"
     }
 })();
 
@@ -198,7 +200,7 @@ var messagesForm = {
 
 CommandActionBuilder = (function () {
 
-    function deleteData(id, url, store, store2) {
+    function deleteData(id, url, store, store2, callback) {
         Ext.MessageBox.confirm('ยืนยัน', 'คุณต้องการลบข้อมูลนี้ใช่ หรือ ไม่?',
                 function (btn) {
                     if (btn === "yes") {
@@ -217,7 +219,9 @@ CommandActionBuilder = (function () {
                                         buttons: Ext.MessageBox.OK,
                                         icon: Ext.MessageBox.INFO,
                                         fn: function (btn) {
-                                            if (store) store.load();
+                                            if (store) store.load({
+                                                callback: callback
+                                            });
                                             if (store2) store2.load();
                                         }
                                     });
@@ -248,6 +252,14 @@ CommandActionBuilder = (function () {
                 this);
     }
 
+    function checkEN(text) {
+        var eng = /^([a-zA-Z])+$/;
+        if (!(eng.test(text))) {
+            return false;
+        }
+        return true;
+    }
+
     return {
         cancleAction: function (from) {
             var text = TextLabel.cancleActionText;
@@ -267,7 +279,9 @@ CommandActionBuilder = (function () {
             });
         },
 
-        deleteData: deleteData
+        deleteData: deleteData,
+
+        checkEN: checkEN
     }
 })();
 
@@ -310,7 +324,9 @@ Ext.application({
         'ProjectProgressUpdateLog',
         'EmployeeStatus',
         'Customer',
-        'Industry'
+        'Industry',
+        'ProjectDeliveryPhase',
+        'ProjectThreshold'
     ],
 
     stores: [
@@ -335,7 +351,8 @@ Ext.application({
         'ProjectProgressUpdateLogStore',
         'EmployeeStatusArrayStore',
         'CustomerStore',
-        'IndustryStore'
+        'IndustryStore',
+        'ProjectDeliveryPhaseStore'
     ],
 
     views: [
@@ -357,7 +374,8 @@ Ext.application({
         'TaskTypeWindow',
         'MainTaskWindow',
         'ProjectRoleWindow',
-        'CustomerWindow'
+        'CustomerWindow',
+        'ProjectDeliveryPhaseDateWindow'
     ],
 
     //controllers: [

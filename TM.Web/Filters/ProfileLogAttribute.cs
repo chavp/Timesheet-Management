@@ -9,6 +9,7 @@ using System.Web.Mvc;
 
 namespace PJ_CWN019.TM.Web.Filters
 {
+    using Cwn.PM.BusinessServices.ViewModels;
     using log4net;
     using Newtonsoft.Json;
     using PJ_CWN019.TM.Web.Models;
@@ -100,6 +101,8 @@ namespace PJ_CWN019.TM.Web.Filters
         {
             if (filterContext.Exception == null)
             {
+                string ip = HttpContext.Current.Request.Params["HTTP_CLIENT_IP"] ?? HttpContext.Current.Request.UserHostAddress;
+
                 var profile = new 
                 {
                     UserID = filterContext.HttpContext.User.Identity.Name,
@@ -108,7 +111,7 @@ namespace PJ_CWN019.TM.Web.Filters
                     ElapsedTime = _timer.Elapsed,
                     UserHostAddress = filterContext.HttpContext.Request.UserHostAddress,
                     QueryString = filterContext.HttpContext.Request.QueryString.ToString(),
-                    PostData = _postDataText,
+                    PostData = _postDataText
                 };
 
                 string profileMsg = JsonConvert.SerializeObject(profile);

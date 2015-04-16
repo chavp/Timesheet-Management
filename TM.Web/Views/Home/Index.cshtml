@@ -7,12 +7,14 @@
     
     ViewBag.AppRoleTitle = string.Join(" / ", rolesDisplayeList.ToArray()).Replace(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner, "PM");
 
-    string timesheetAction = "";
-    string addProjectMemberAction = "";
-    string editProjectMemberAction = "";
-    string reportAction = "href=" + Url.Action("Report", "Timesheet");
-    string emplyeeManagementAction = "";
-
+    string timesheetAction = "",
+        addProjectMemberAction = "",
+        editProjectMemberAction = "",
+        reportAction = "href=" + Url.Action("Report", "Timesheet"),
+        orgManagementAction = "",
+        crmAction = "";
+    //string emplyeeManagementAction = "";
+    
     var featuresForDisplay = new Dictionary<string, string>();
 
     if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Member))
@@ -23,13 +25,20 @@
         || Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
     {
         reportAction = "href=" + Url.Action("Report", "ProjectPortfolio");
-        emplyeeManagementAction = "href=" + Url.Action("Employees", "Organization");
+        //emplyeeManagementAction = "href=" + Url.Action("Employees", "Organization");
+        //orgManagementAction = "href=" + Url.Action("Structure", "Organization");
+        crmAction = "href=" + Url.Action("Management", "CustomerRelationship");
     }
-
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.HR))
+    {
+        orgManagementAction = "href=" + Url.Action("Structure", "Organization");
+    }
+    
     if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
     {
         editProjectMemberAction = "href=" + Url.Action("SearchReadOnly", "Project");
     }
+    
     if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager) 
         || Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
     {
@@ -45,8 +54,15 @@
     if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
     {
         featuresForDisplay.Add("Assign Sale, Project Manager และ Resource Manager ให้กับโครงการ", addProjectMemberAction);
-        featuresForDisplay.Add("การจัดการพนักงานขององค์กร", emplyeeManagementAction);
+        //featuresForDisplay.Add("การจัดการองค์กร", orgManagementAction);
+        featuresForDisplay.Add("ลูกค้าสัมพันธ์ (Customer Relationship)", crmAction);
     }
+    
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.HR))
+    {
+        featuresForDisplay.Add("การจัดการองค์กร", orgManagementAction);
+    }
+    
     if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager))
     {
         featuresForDisplay.Add("Assign Resource ภายในแผนกตนเอง ให้กับโครงการ", addProjectMemberAction);
@@ -77,19 +93,28 @@
         reportsFeature.Add("Actual Cost for Project");
     }
 
-    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin))
+    if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Admin)
+        || Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.HR))
     {
-        reportsFeature.Add("Actual Cost for Person");
-        reportsFeature.Add("Actual Effort for Person");
-        reportsFeature.Add("Actual Cost for Department");
-        reportsFeature.Add("Actual Effort for Department");
-        reportsFeature.Add("Actual Cost for Project");
-        reportsFeature.Add("Actual Cost for All Project");
-        reportsFeature.Add("Timesheet Data Recording");
-        
-        if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
+        if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.HR))
         {
-            reportsFeature.Remove("Actual Cost for All Person");
+            reportsFeature.Add("Actual Effort for Person");
+            reportsFeature.Add("Timesheet Data Recording");
+        }
+        else 
+        { 
+            reportsFeature.Add("Actual Cost for Person");
+            reportsFeature.Add("Actual Effort for Person");
+            reportsFeature.Add("Actual Cost for Department");
+            reportsFeature.Add("Actual Effort for Department");
+            reportsFeature.Add("Actual Cost for Project");
+            reportsFeature.Add("Actual Cost for All Project");
+            reportsFeature.Add("Timesheet Data Recording");
+        
+            if (Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.ProjectOwner))
+            {
+                reportsFeature.Remove("Actual Cost for All Person");
+            }
         }
     }
 
@@ -408,6 +433,7 @@
 @section scripts{
     @Scripts.Render("~/bundles/imagemapster")
     @Scripts.Render("~/bundles/d3")
+    
     <script>
     $(function () {
         $('#op-flow').mapster({
@@ -454,35 +480,35 @@
             ]
         });
 
-        var prjTimelineFillter = Ext.create("widget.panel", {
-            renderTo: "prj-timeline-fillter",
-            layout: 'hbox',
-            items: [
-                {
-                    xtype: "fieldcontainer",
-                    fieldLabel: TextLabel.searchCriterionLabel,
-                    layout: 'hbox',
-                    fieldDefaults: {
-                        labelWidth: 300,
-                        allowBlank: false,
-                        labelAlign: 'right'
-                    },
-                    items: [
-                        {
-                            xtype: 'combo',
-                            width: 300,
-                            forceSelection: true,
-                            store: critiries,
-                            queryMode: 'local',
-                            displayField: 'name',
-                            valueField: 'value',
-                            editable: false,
-                            value: 3
-                        }
-                    ]
-                }
-            ]
-        });
+        //var prjTimelineFillter = Ext.create("widget.panel", {
+        //    renderTo: "prj-timeline-fillter",
+        //    layout: 'hbox',
+        //    items: [
+        //        {
+        //            xtype: "fieldcontainer",
+        //            fieldLabel: TextLabel.searchCriterionLabel,
+        //            layout: 'hbox',
+        //            fieldDefaults: {
+        //                labelWidth: 300,
+        //                allowBlank: false,
+        //                labelAlign: 'right'
+        //            },
+        //            items: [
+        //                {
+        //                    xtype: 'combo',
+        //                    width: 300,
+        //                    forceSelection: true,
+        //                    store: critiries,
+        //                    queryMode: 'local',
+        //                    displayField: 'name',
+        //                    valueField: 'value',
+        //                    editable: false,
+        //                    value: 3
+        //                }
+        //            ]
+        //        }
+        //    ]
+        //});
 
         @*var button = Ext.create('Ext.Button', {
             renderTo: "prj-timeline-fillter-cmd",
@@ -530,11 +556,13 @@
                                 progress: project.Progress
                             });
                         }
-                        var barHeight = 35;
-
-                        var margin = { top: 30, right: 20, bottom: 10, left: 70 },
+                        var barHeight = 45;
+                        if (data.length > 500) barHeight = 45;
+                        if (data.length < 10) barHeight = 60;
+                        //console.log(data.length);
+                        var margin = { top: 70, right: 20, bottom: 10, left: 70 },
                                         width = width_panel - margin.left - margin.right,
-                                        height = data.length * barHeight - margin.top - margin.bottom;
+                                        height = margin.top + data.length * barHeight - margin.bottom;
 
                         var duration = 1255, delay = 50;
 
@@ -551,53 +579,53 @@
 
                         // gradient for presale
                         var gradient = svg.append("svg:defs")
-                        .append("svg:linearGradient")
-                        .attr("id", "gradient")
-                        .attr("x1", "0%")
-                        .attr("y1", "0%")
-                        .attr("x2", "100%")
-                        .attr("y2", "0%")
-                        .attr("spreadMethod", "pad");
+                            .append("svg:linearGradient")
+                            .attr("id", "gradient")
+                            .attr("x1", "0%")
+                            .attr("y1", "0%")
+                            .attr("x2", "100%")
+                            .attr("y2", "0%")
+                            .attr("spreadMethod", "pad");
 
                         gradient.append("svg:stop")
-                        .attr("offset", "0%")
-                        .attr("stop-color", "steelblue")
-                        .attr("stop-opacity", 1);
+                            .attr("offset", "0%")
+                            .attr("stop-color", "steelblue")
+                            .attr("stop-opacity", 1);
 
                         gradient.append("svg:stop")
-                        .attr("offset", "100%")
-                        .attr("stop-color", "white")
-                        .attr("stop-opacity", 1);
+                            .attr("offset", "100%")
+                            .attr("stop-color", "white")
+                            .attr("stop-opacity", 1);
 
                         // gradient for inprogress
                         var gradientProgress = svg.append("svg:defs")
-                        .append("svg:linearGradient")
-                        .attr("id", "gradient-progress")
-                        .attr("x1", "100%")
-                        .attr("y1", "0%")
-                        .attr("x2", "0%")
-                        .attr("y2", "0%")
-                        .attr("spreadMethod", "pad");
+                            .append("svg:linearGradient")
+                            .attr("id", "gradient-progress")
+                            .attr("x1", "100%")
+                            .attr("y1", "0%")
+                            .attr("x2", "0%")
+                            .attr("y2", "0%")
+                            .attr("spreadMethod", "pad");
 
                         gradientProgress.append("svg:stop")
-                        .attr("offset", "0%")
-                        .attr("stop-color", "green")
-                        .attr("stop-opacity", 1);
+                            .attr("offset", "0%")
+                            .attr("stop-color", "green")
+                            .attr("stop-opacity", 1);
 
                         gradientProgress.append("svg:stop")
-                        .attr("offset", "100%")
-                        .attr("stop-color", "green")
-                        .attr("stop-opacity", 0, 8);
+                            .attr("offset", "100%")
+                            .attr("stop-color", "green")
+                            .attr("stop-opacity", 0, 8);
 
                         // gradient for start contract
                         var gradientContractStart = svg.append("svg:defs")
-                        .append("svg:linearGradient")
-                        .attr("id", "gradient-contract-start")
-                        .attr("x1", "0%")
-                        .attr("y1", "0%")
-                        .attr("x2", "100%")
-                        .attr("y2", "0%")
-                        .attr("spreadMethod", "pad");
+                            .append("svg:linearGradient")
+                            .attr("id", "gradient-contract-start")
+                            .attr("x1", "0%")
+                            .attr("y1", "0%")
+                            .attr("x2", "100%")
+                            .attr("y2", "0%")
+                            .attr("spreadMethod", "pad");
 
                         gradientContractStart.append("svg:stop")
                         .attr("offset", "0%")
@@ -612,7 +640,7 @@
                         var barsizeNonEndCon = 200;
 
                         var chart = svg.append("g")
-                                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
                         //var x = d3.time.scale().domain([d3.time.day.offset(startDate, -7), d3.time.day.offset(endDate, 7)])
                         //        .rangeRound([0, width - margin.left - margin.right]);
@@ -629,14 +657,13 @@
                             return d3.svg.axis()
                             .scale(x)
                             .orient("top")
-                            .ticks(d3.time.months, 1)
+                            .ticks(d3.time.weeks, 1)
                             .tickFormat(d3.time.format('%d/%m/%Y'))
                             .innerTickSize(-(height - margin.top - margin.bottom))  // http://bl.ocks.org/hunzy/11110940
                             .outerTickSize(0)
                             .tickPadding(10);
                             //.tickSize(5)
                             //.tickPadding(8)
-
                         }
                         var xAxis = make_x_axis();
 
@@ -651,10 +678,22 @@
                         chart.append("g")
                             .attr("class", "x axis");
                         // Update the x-axis.
+
                         chart.selectAll(".x.axis")
                             .transition()
                             .duration(duration)
-                            .call(xAxis);
+                            .call(xAxis)
+                        .selectAll("text")
+                            .style("text-anchor", "end")
+                            .attr("dx", "-.4em")
+                            .attr("dy", "-.55em")
+                            .attr("y", "10")
+                            .attr("transform", "rotate(90)")
+                        //  .style("text-anchor", "end")
+                        //  .attr("dx", "-.8em")
+                        //  .attr("dy", "-1em")
+                        //  .attr("transform", "rotate(90)")
+                            ;
 
                         yAxis.innerTickSize(-width);
 
@@ -669,21 +708,29 @@
                                     .x(x)
                                     .on('zoom', function () {
 
-                                        chart.select(".x.axis").call(xAxis).selectAll("text");
+                                        chart.select(".x.axis")
+                                            .call(xAxis)
+                                            .selectAll("text")
+                                                .style("text-anchor", "end")
+                                                .attr("dx", "-.4em")
+                                                .attr("dy", "-.55em")
+                                                .attr("y", "10")
+                                                .attr("transform", "rotate(90)")
+                                        ;
                                         //  .style("text-anchor", "end")
                                         //  .attr("dx", "-.8em")
                                         //  .attr("dy", "-1em")
                                         //  .attr("transform", "rotate(90)");
 
                                         chart.select("line.today-line")
-                                                .attr("x1", x(toDay))
+                                                .attr("x1", x(today))
                                                 .attr("y1", y(0))
-                                                .attr("x2", x(toDay))
+                                                .attr("x2", x(today))
                                                 .attr("y2", yChart(1));
 
                                         chart.select("text.today-text")
-                                                .text("ToDay: " + format(toDay))
-                                                .attr("x", x(toDay) + 5)
+                                                .text("ToDay: " + format(today))
+                                                .attr("x", x(today) + 5)
                                                 .attr("y", yChart(1) - 5);
 
                                         update();
@@ -693,10 +740,11 @@
                         var format = d3.time.format('%d/%m/%Y');
 
                         // presale
-                        chart.append("g").attr("clip-path", "url(#chart-area)")
+                        var rects_con = chart.append("g").attr("clip-path", "url(#chart-area)")
                             .selectAll("rect.con")
-                            .data(projects)
-                            .enter().append("rect")
+                            .data(projects);
+
+                        rects_con.enter().append("rect")
                             .attr("class", "con")
                             .attr("transform", function (d, i) { return "translate(0," + y(d.name) + ")"; })
                             .attr("x", function (d, i) {
@@ -718,6 +766,20 @@
                             .style("fill", function (d) {
                                 if (d.contractStartDate === "" && d.contractEndDate === "") return "url(#gradient)";
                             });
+
+                        var tip_con = d3.tip()
+                          .attr('class', 'd3-tip')
+                          .offset([-10, 0])
+                          .html(function (d) {
+                              //console.log(d);
+                              var date = format(new Date(d.startDate));
+                              var msg = "<strong>Start Date:</strong> <span style='color:red'>" + date + "</span>";
+                              return msg;
+                          });
+                        svg.call(tip_con);
+                        chart.selectAll("rect.con")
+                            .on("mouseover", tip_con.show)
+                            .on("mouseout", tip_con.hide);
                         //************************************************
 
                         //implement 
@@ -749,6 +811,23 @@
                                 if (d.contractStartDate !== "" && d.contractEndDate === "")
                                     return "url(#gradient-contract-start)";
                             });
+
+                        var tip_war = d3.tip()
+                          .attr('class', 'd3-tip')
+                          .offset([-10, 0])
+                          .html(function (d) {
+                              //console.log(d);
+                              var contractStartDate = format(new Date(d.contractStartDate));
+                              var msg = "<strong>Contract Start Date:</strong> <span style='color:red'>" + contractStartDate + "</span>";
+                              if (d.contractEndDate)
+                                  var contractEndDate = format(new Date(d.contractEndDate));
+                                  msg += "<br/><strong>Contract End Date:</strong> <span style='color:red'>" + contractEndDate + "</span>";
+                              return msg;
+                          });
+                        svg.call(tip_war);
+                        chart.selectAll("rect.war")
+                            .on("mouseover", tip_war.show)
+                            .on("mouseout", tip_war.hide);
                         //************************************************
 
                         //progress
@@ -783,6 +862,9 @@
                                     .range([0, max]);
                                 return xProgress(d.progress);
                             });
+                        chart.selectAll("rect.prog")
+                            .on("mouseover", tip_war.show)
+                            .on("mouseout", tip_war.hide);
 
                         //war
                         chart.append("g").attr("clip-path", "url(#chart-area)")
@@ -804,6 +886,20 @@
                             })
                             .attr("height", y.rangeBand())
                         ;
+                        var tip_dev = d3.tip()
+                          .attr('class', 'd3-tip')
+                          .offset([-10, 0])
+                          .html(function (d) {
+                              //console.log(d);
+                              var warrantyEndDate = format(new Date(d.warrantyEndDate));
+                              var msg = "<strong>Warranty End Date:</strong> <span style='color:red'>" + warrantyEndDate + "</span>";
+                              return msg;
+                          });
+                        svg.call(tip_dev);
+                        chart.selectAll("rect.dev")
+                            .on("mouseover", tip_dev.show)
+                            .on("mouseout", tip_dev.hide);
+                        //end dev
 
                         //text progress
                         var textProgressMarging = (y.rangeBand() / 10) + 1;
@@ -891,31 +987,31 @@
                             .range([0, height]);
 
                         //console.log("@ViewBag.ToDay");
-                        var toDay = new Date("@ViewBag.ToDay");
+                        var today = new Date("@ViewBag.ToDay");
 
                         chart.append("line").attr("clip-path", "url(#chart-area)")
                                 .attr("class", "today-line")
-                                .attr("x1", x(toDay))
+                                .attr("x1", x(today))
                                 .attr("y1", 0)
-                                .attr("x2", x(toDay))
+                                .attr("x2", x(today))
                                 .attr("y2", yChart(1));
                         chart.append("text").attr("clip-path", "url(#chart-area)")
                             .attr("class", "today-text")
-                                .text("ToDay: " + format(toDay))
-                                .attr("x", x(toDay) + 5)
+                                .text("Today: " + format(today))
+                                .attr("x", x(today) + 5)
                                 .attr("y", yChart(1) - 5);
 
                         //add legend
-                        var legendRectSize = 18;
-                        var legendSpacing = 4;
+                        var legendRectSize = 18,
+                            legendSpacing = 4;
 
                         var colors = d3.scale.quantize()
                             .range(["steelblue", "green", "lightpink"]);
 
                         var phases = [
-                            { name: "Presale", color: "steelblue" },
-                            { name: "Implement", color: "green" },
-                            { name: "Warranty", color: "lightpink" }
+                            { name: "Presale (Start Date in Sharepoint)", color: "steelblue" },
+                            { name: "Implement (Start - End Date in Contract)", color: "green" },
+                            { name: "Warranty (Start - End Date for Warranty)", color: "lightpink" }
                         ];
                         var legend = chart.selectAll(".legend")
                             .data(phases)
@@ -924,19 +1020,21 @@
                             .attr("transform", function (d, i) { return "translate(-60," + i * 20 + ")"; });
 
                         legend.append("rect")
-                        .attr("x", width - 11)
-                        .attr("y", margin.top - 5)
-                        .attr("width", 10)
-                        .attr("height", 10)
-                        .style("fill", function (d) { return d.color; })
-                        .style("stroke", "grey");
+                            .attr("x", width - 11)
+                            .attr("y", margin.top - 55)
+                            .attr("width", 10)
+                            .attr("height", 10)
+                            .style("fill", function (d) { return d.color; })
+                            .style("stroke", "grey");
 
                         legend.append("text")
                             .attr("x", width - 13)
-                            .attr("y", margin.top)
+                            .attr("y", margin.top - 50)
                             .attr("dy", ".35em")
                             .style("text-anchor", "end")
-                            .text(function (d) { return d.name; });
+                            .text(function (d) {
+                                return d.name;
+                            });
 
                         //    var legend = d3.select('#legend')
                         //                    .append('ul')

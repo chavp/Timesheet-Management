@@ -23,7 +23,7 @@ namespace PJ_CWN019.TM.Web.Controllers
 
     [ErrorLog]
     [ProfileLog]
-    [Authorize(Roles = ConstAppRoles.Admin)]
+    [Authorize(Roles = ConstAppRoles.HR)]
     [FourceToChangeAttribute]
     [SessionState(SessionStateBehavior.Disabled)]
     [ValidateAntiForgeryTokenOnAllPosts]
@@ -309,12 +309,25 @@ namespace PJ_CWN019.TM.Web.Controllers
             var success = false;
             var msg = string.Empty;
 
+            var dupMessage = "พบชื่อรหัสพนักงานท่านนี้อยู่ในระบบแล้ว กรุณาระบุรหัสพนักงานใหม่";
+
             using (var session = _sessionFactory.OpenSession())
             using (var transaction = session.BeginTransaction())
             {
                 // Update
                 if (employeeView.ID <= 0)
                 {
+                    // check Dup
+                    var dup = (from d in session.Query<User>()
+                               where d.EmployeeID == employeeView.EmployeeID
+                               select d).FirstOrDefault();
+
+                    if (dup != null)
+                    {
+                        msg = dupMessage;
+                        return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+                    }
+
                     var title = (from x in session.Query<TitleName>()
                                  where x.ID == employeeView.TitleID
                                  select x).Single();
@@ -391,6 +404,18 @@ namespace PJ_CWN019.TM.Web.Controllers
                 }
                 else
                 {
+                    // check Dup
+                    var dup = (from d in session.Query<User>()
+                               where d.EmployeeID == employeeView.EmployeeID
+                               && d.ID != employeeView.ID
+                               select d).FirstOrDefault();
+
+                    if (dup != null)
+                    {
+                        msg = dupMessage;
+                        return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
+                    }
+
                     var theEmp = (from x in session.Query<User>()
                                   where x.ID == employeeView.ID
                                       select x).Single();
@@ -636,158 +661,7 @@ namespace PJ_CWN019.TM.Web.Controllers
 
             return Json(result, JsonRequestBehavior.AllowGet);
         }
-        public JsonResult GetTimesheetYears()
-        {
-            var viewList = new List<TimesheetYear>();
-            //{ year: 2014, nonRecord: 260, nonProject: 150, project: 230 },
-              //      { year: 2015, nonRecord: 260, nonProject: 150, project: 230 }
-            using (var session = _sessionFactory.OpenSession())
-            {
-                var project_timesheets = from tm in session.Query<Timesheet>()
-                            group tm by new
-                            {
-                                Year = tm.ActualStartDate.Value.Date.Year,
-                            } into yearGrp
-                            select new
-                            {
-                                Year = yearGrp.Key.Year,
-                                ProjectEfforts = yearGrp
-                                    .Where(d => d.Project.Code != "PJ-CWN000")
-                                    .Sum(d => d.ActualHourUsed),
-                                NonProjectEfforts = yearGrp
-                                    .Where(d => d.Project.Code == "PJ-CWN000")
-                                    .Sum(d => d.ActualHourUsed)
-                            };
-
-                foreach (var item in project_timesheets)
-                {
-                    var timesheetYear = new TimesheetYear
-                    {
-                        Year = item.Year,
-                        ProjectEfforts = item.ProjectEfforts,
-                        NonProjectEfforts = item.NonProjectEfforts
-                    };
-
-                    viewList.Add(timesheetYear);
-                }
-
-                viewList = viewList.Where(t => t.Year != 2013).OrderBy(t => t.Year).ToList();
-            }
-
-            return Json(viewList, JsonRequestBehavior.AllowGet);
-        }
-        public JsonResult GetDepartmentTimesheetYears()
-        {
-            var viewList = new List<DepartmentTimesheetYear>();
-            var resultList = new Dictionary<int, DepartmentTimesheetYearItem>();
-            var departments = new List<string>();
-            var years = new List<int>();
-            using (var session = _sessionFactory.OpenSession())
-            {
-                //var timesheets = (from tm in session.Query<Timesheet>() select tm).ToList();
-
-                var department_timesheets = from tm in session.Query<Timesheet>()
-                                            where tm.Project.Code != "PJ-CWN000"
-                                            && tm.ActualStartDate.Value.Year != 2013
-                                            group tm by new
-                                            {
-                                                Year = tm.ActualStartDate.Value.Year,
-                                                Department = tm.ActualUserDepartment.NameEN,
-                                                ProjectRole = tm.ProjectRole.NameEN,
-                                                ProjectRoleID = tm.ProjectRole.ID,
-                                            } into yearDepartmentGrp
-                                            select new
-                                            {
-                                                Year = yearDepartmentGrp.Key.Year,
-                                                Department = yearDepartmentGrp.Key.Department,
-                                                ProjectRole = yearDepartmentGrp.Key.ProjectRole,
-                                                ProjectRoleID = yearDepartmentGrp.Key.ProjectRoleID,
-                                                TotalEfforts = yearDepartmentGrp.Sum( t => t.ActualHourUsed ),
-                                            };
-
-                var results = department_timesheets.ToList();
-
-                departments = (from d in results
-                               orderby d.Department
-                               select d.Department).Distinct().ToList();
-
-                years = (from d in results
-                         orderby d.Year
-                         select d.Year).Distinct().ToList();
-
-                foreach (var item in results)
-                {
-                    viewList.Add(new DepartmentTimesheetYear
-                    {
-                        Year = item.Year,
-                        Department = item.Department,
-                        ProjectRole = item.ProjectRole,
-                        ProjectRoleID = item.ProjectRoleID,
-                        TotalEfforts = item.TotalEfforts,
-                    });
-                }
-
-                foreach (var item in viewList)
-                {
-                    var estimated = new DateTime(item.Year, 1, 1);
-                    var rojectRole = (from r in session.Query<ProjectRole>() 
-                                     where r.ID == item.ProjectRoleID
-                                     select r).Single();
-
-                    var roleCost = rojectRole.ProjectRoleRates
-                            .GetEffectiveRatePerHours(estimated)
-                            .FirstOrDefault();
-
-                    item.TotalCost += item.TotalEfforts * roleCost;
-                }
-
-                //var departments = department_timesheets.
-
-                var department_group = from tm in viewList
-                                            group tm by new
-                                            {
-                                                Year = tm.Year,
-                                                Department = tm.Department,
-                                            } into yearDepartmentGrp
-                                       select new DepartmentTimesheetYear
-                                            {
-                                                Year = yearDepartmentGrp.Key.Year,
-                                                Department = yearDepartmentGrp.Key.Department,
-                                                TotalCost = yearDepartmentGrp.Sum(t => t.TotalCost),
-                                            };
-
-                viewList = department_group.ToList();
-
-                foreach (var item in viewList)
-                {
-                    if (!resultList.ContainsKey(item.Year))
-                    {
-                        var newD = new DepartmentTimesheetYearItem
-                        {
-                            Year = item.Year
-                        };
-                        newD.InitCosts(departments);
-                        resultList.Add(item.Year, newD);
-                    }
-
-                    var d = resultList[item.Year];
-                    for (int i = 0; i < departments.Count; i++)
-                    {
-                        if (departments[i] == item.Department)
-                        {
-                            d.Costs[i] += item.TotalCost;
-                        }
-                    }
-                }
-            }
-
-            return Json(new {
-                data = resultList.Values,
-                years = years,
-                departments = departments,
-            } , JsonRequestBehavior.AllowGet);
-        }
-
+        
         public JsonResult GetEffortGroupByProjectRole(long projectID)
         {
             var data = new Dictionary<string, decimal>();
@@ -850,10 +724,12 @@ namespace PJ_CWN019.TM.Web.Controllers
             }, JsonRequestBehavior.AllowGet);
         }
 
-        string format = "yyyy-MM-dd";
-        string format2 = "dd-MM-yyyy";
+        string format = ConstPage.Format;
+        string format2 = ConstPage.Format2;
         CultureInfo forParseDate = new CultureInfo("en-US");
 
+        string PRESALE_LV_1 = "PRESALE_LV_1";
+        string PRESALE_LV_2 = "PRESALE_LV_2";
         public JsonResult GetCumulativeEffortByDate(string projectCode)
         {
             var viewList = new List<CumulativeItemByDateView>();
@@ -937,6 +813,7 @@ namespace PJ_CWN019.TM.Web.Controllers
                 startDate = startDate,
                 endDate = endDate,
                 total = total,
+
                 data = viewList,
                 success = true,
             };
@@ -944,291 +821,7 @@ namespace PJ_CWN019.TM.Web.Controllers
             return Json(result, JsonRequestBehavior.AllowGet);
         }
 
-        public JsonResult GetCumulativeCostByDate(string projectCode)
-        {
-            var viewList = new List<CumulativeItemByDateView>();
-
-            string startDate = "";
-            string endDate = "";
-            decimal total = 0;
-            int totalItems = 0;
-            int totalGroup = 0;
-            string theFormat = format2;
-
-            using (var session = _sessionFactory.OpenSession())
-            {
-                var prj = (from p in session.Query<Project>()
-                           where p.Code == projectCode
-                           select p).Single();
-
-                if (prj.StartDate.HasValue)
-                {
-                    startDate = prj.StartDate.Value.ToString(theFormat, forParseDate);
-                    if (prj.ContractEndDate.HasValue)
-                    {
-                        endDate = prj.ContractEndDate.Value.AddMonths(5).ToString(theFormat, forParseDate);
-                    }
-                    else
-                    {
-                        endDate = prj.StartDate.Value.AddMonths(5).ToString(theFormat, forParseDate);
-                    }
-                }
-
-                var query = from tm in session.Query<Timesheet>()
-                            where tm.Project == prj
-                            orderby tm.ActualStartDate
-                            group tm by new
-                            {
-                                Date = tm.ActualStartDate.Value.Date,
-                            } into weekGrp
-                            select new
-                            {
-                                Date = weekGrp.Key.Date,
-                                Timesheets = weekGrp.ToList()
-                            };
-
-                foreach (var item in query)
-                {
-                    var timesheetDetails = new List<TimesheetDetail>();
-                    foreach (var t in item.Timesheets)
-                    {
-                        var cost = t.ProjectRole.ProjectRoleRates
-                                .GetEffectiveRatePerHours(t.ActualStartDate)
-                                .FirstOrDefault();
-                        var totalCost = t.ActualHourUsed * cost;
-                        var tDetail = new TimesheetDetail
-                        {
-                            Phase = t.Phase.ID.ToString(),
-                            Hours = t.ActualHourUsed,
-                            Cost = totalCost,
-                        };
-                        timesheetDetails.Add(tDetail);
-                    }
-
-                    var c = new CumulativeItemByDateView
-                    {
-                        ID = item.Date.Ticks,
-                        Date = item.Date.ToString(theFormat, forParseDate),
-
-                        PreSale = timesheetDetails.Where(t => t.Phase == "1").Select(t => t.Cost).Sum(),
-                        Implement = timesheetDetails.Where(t => t.Phase == "2").Select(t => t.Cost).Sum(),
-                        Warranty = timesheetDetails.Where(t => t.Phase == "3").Select(t => t.Cost).Sum(),
-                        Operation = timesheetDetails.Where(t => t.Phase == "4").Select(t => t.Cost).Sum(),
-                    };
-
-                    total += c.PreSale + c.Implement + c.Warranty + c.Operation;
-
-                    viewList.Add(c);
-                }
-
-                viewList = viewList.ToList();
-                totalItems = viewList.Count;
-                int maxItems = 50;
-                if (viewList.Count > maxItems)
-                {
-                    int groupSize = viewList.Count / maxItems;
-                    int groupID = 1;
-                    for (int i = 0; i < viewList.Count; i++)
-                    {
-                        viewList[i].Group = groupID;
-                        if ((i + 1) % groupSize == 0) ++groupID;
-                    }
-
-                    var groupBy = from r in viewList
-                                  group r by r.Group into grp
-                                  select new
-                                  {
-                                      key = grp.Key,
-                                      Count = grp.Count(),
-                                      Date = grp.Last().Date,
-                                      PreSale = grp.Sum(d => d.PreSale),
-                                      Implement = grp.Sum(d => d.Implement),
-                                      Warranty = grp.Sum(d => d.Warranty),
-                                      Operation = grp.Sum(d => d.Operation),
-                                  };
-
-                    totalGroup = groupBy.Count();
-
-                    var newViewList = new List<CumulativeItemByDateView>();
-                    foreach (var item in groupBy)
-                    {
-                        var cumItemDateView = new CumulativeItemByDateView
-                        {
-                            Date = item.Date,
-                            Group = item.key,
-                            Count = item.Count,
-                            PreSale = item.PreSale,
-                            Implement = item.Implement,
-                            Warranty = item.Warranty,
-                            Operation = item.Operation,
-                        };
-
-                        newViewList.Add(cumItemDateView);
-                    }
-
-                    viewList = newViewList;
-                }
-
-                decimal sumPreSale = 0;
-                decimal sumImplementAndDev = 0;
-                decimal sumWarranty = 0;
-                decimal sumOperation = 0;
-                foreach (var item in viewList)
-                {
-                    sumPreSale = sumPreSale + item.PreSale;
-                    item.PreSale = sumPreSale;
-
-                    sumImplementAndDev = sumImplementAndDev + item.Implement;
-                    item.Implement = sumImplementAndDev;
-
-                    sumWarranty = sumWarranty + item.Warranty;
-                    item.Warranty = sumWarranty;
-
-                    sumOperation = sumOperation + item.Operation;
-                    item.Operation = sumOperation;
-                }
-            }
-
-            var result = new
-            {
-                startDate = startDate,
-                endDate = endDate,
-                total = total,
-                totalItems = totalItems,
-                totalGroup = totalGroup,
-                data = viewList,
-                success = true,
-            };
-
-            return Json(result, JsonRequestBehavior.AllowGet);
-        }
-
-        public JsonResult GetEffortTimesheetItem(string projectCode)
-        {
-            string theFormat = format2;
-            var viewList = new List<EffortTimesheetItem>();
-            var startTimesheet = DateTime.Now.AddMonths(-3);
-            var endTimesheet = DateTime.Now;
-
-            var projectRoles = new List<string>();
-
-            using (var session = _sessionFactory.OpenSession())
-            {
-                var prj = (from p in session.Query<Project>()
-                           where p.Code == projectCode
-                           select p).Single();
-
-                var timesheets = (from tm in session.Query<Timesheet>()
-                                 where tm.Project == prj
-                                 select tm).ToList();
-
-                var groupByProjectRoles = (from tm in timesheets
-                                          where tm.Project == prj
-                                          orderby tm.ProjectRole.Order
-                                          select tm.ProjectRole.NameEN).Distinct();
-
-                projectRoles = groupByProjectRoles.ToList();
-
-                var query = from tm in timesheets
-                            where tm.Project == prj
-                            orderby tm.ActualStartDate
-                            group tm by new
-                            {
-                                Date = tm.ActualStartDate.Value.Date,
-                            } into weekGrp
-                            select new
-                            {
-                                Date = weekGrp.Key.Date,
-                                Timesheets = weekGrp.ToList()
-                            };
-
-
-                foreach (var item in query)
-                {
-                    var c = new EffortTimesheetItem
-                    {
-                        Date = item.Date.ToString(theFormat, forParseDate),
-                        TotalItems = item.Timesheets.Count,
-                    };
-
-                    c.InitEfforts(projectRoles);
-
-                    for (int i = 0; i < projectRoles.Count; i++)
-                    {
-                        var roleName = projectRoles[i];
-                        var totalEffort = item.Timesheets
-                            .Where(t => t.ProjectRole.NameEN == roleName)
-                            .Select(t => t.ActualHourUsed).Sum();
-
-                        c.Efforts[i] = totalEffort;
-                    }
-
-                    viewList.Add(c);
-                }
-
-                int maxItems = 50;
-                if (viewList.Count > maxItems)
-                {
-                    int groupSize = viewList.Count / maxItems;
-                    int groupID = 1;
-                    for (int i = 0; i < viewList.Count; i++)
-                    {
-                        viewList[i].Group = groupID;
-                        if ((i + 1) % groupSize == 0) ++groupID;
-                    }
-
-                    var groupBy = from r in viewList
-                                  group r by r.Group into grp
-                                  select new
-                                  {
-                                      key = grp.Key,
-                                      Count = grp.Count(),
-                                      Date = grp.Last().Date,
-                                      EffortTimesheetItems = grp.ToList(),
-                                  };
-
-                    var newViewList = new List<EffortTimesheetItem>();
-                    foreach (var item in groupBy)
-                    {
-                        var effortTimesheetItem = new EffortTimesheetItem
-                        {
-                            Date = item.Date,
-                            Group = item.key,
-                        };
-                        effortTimesheetItem.InitEfforts(projectRoles);
-                        foreach (var effort in item.EffortTimesheetItems)
-                        {
-                            for (int i = 0; i < effort.Efforts.Count; i++)
-                            {
-                                effortTimesheetItem.Efforts[i] += effort.Efforts[i];
-                            }
-                        }
-
-                        newViewList.Add(effortTimesheetItem);
-                    }
-
-                    viewList = newViewList;
-                }
-            }
-
-            var result = new
-            {
-                startDate = startTimesheet.ToString(theFormat, forParseDate),
-                endDate = endTimesheet.ToString(theFormat, forParseDate),
-                totalItems = viewList.Count(),
-                projectRoles = projectRoles,
-                data = viewList,
-                success = true,
-            };
-
-            return Json(result, JsonRequestBehavior.AllowGet);
-        }
-
-        Func<DateTime, int> _weekProjector =
-                    d => CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(
-                        d,
-                        CalendarWeekRule.FirstFourDayWeek,
-                        DayOfWeek.Sunday);
+        Func<DateTime, int> _weekProjector = ConstPage.WeekProjector;
 
         public JsonResult GetPhaseEffortByWeekly(string projectCode)
         {

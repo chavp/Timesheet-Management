@@ -2,4 +2,647 @@
     ViewBag.Title = "ProjectDashboard";
 }
 
-<h2>ProjectDashboard</h2>
+@Html.Partial("_Template", new PJ_CWN019.TM.Web.Models.TemplateView
+    {
+        MainPanelID = "projectDashboardPanel",
+        MainIcon = "glyphicon glyphicon-usd",
+        MainTitle = "Project Portfolio",
+        SubIcon = "glyphicon glyphicon-gift",
+        SubTitle = "Dashboard"
+    })
+
+
+@Scripts.Render("~/bundles/d3")
+
+@section scripts{
+    <script>
+        paramsView.urlReadProject = '@Url.Content("~/ProjectPortfolio/GetProject")';
+        paramsView.urlGetEffortGroupByProjectRole = '@Url.Content("~/ProjectPortfolio/GetEffortGroupByProjectRole")';
+        paramsView.urlGetCostGroupByProjectRole = '@Url.Content("~/ProjectPortfolio/GetCostGroupByProjectRole")';
+        paramsView.urlGetCumulativeEffortByDate = '@Url.Content("~/ProjectPortfolio/GetCumulativeCostByDate")';
+        paramsView.urlGetPhaseEffortByWeekly = '@Url.Content("~/ProjectPortfolio/GetPhaseEffortByWeekly")';
+
+        paramsView.urlGetEffortTimesheetItem = '@Url.Content("~/ProjectPortfolio/GetEffortTimesheetItem")';
+
+        paramsView.urlGetDepartmentTimesheetYears = '@Url.Content("~/ProjectPortfolio/GetDepartmentTimesheetYears")';
+        paramsView.urlGetTimesheetYears = '@Url.Content("~/ProjectPortfolio/GetTimesheetYears")';
+
+        //function drawPieChart(chartID, data) {
+        //    if (data.length > 0) {
+        //        nv.addGraph(function () {
+        //            var chart = nv.models.pieChart()
+        //                .x(function (d) { return d.label })
+        //                .y(function (d) { return d.value })
+        //                .showLabels(true)     //Display pie labels
+        //                .labelThreshold(.05)  //Configure the minimum slice size for labels to show up
+        //                .labelType("percent") //Configure what type of data to show in the label. Can be "key", "value" or "percent"
+        //                .donut(true)          //Turn on Donut mode. Makes pie chart look tasty!
+        //                .donutRatio(0.35)     //Configure how big you want the donut hole size to be.
+        //            ;
+
+        //            d3.select(chartID)
+        //                .style("width", "100%")
+        //                .style("height", "100%");
+
+        //            d3.select(chartID + " svg")
+        //                .style("width", "100%")
+        //                .style("height", "100%")
+        //                .datum(data)
+        //                .transition().duration(350)
+        //                .call(chart);
+
+        //            return chart;
+        //        });
+        //    } else {
+        //        $(chartID).empty();
+        //        $(chartID).append('<svg />');
+        //    }
+        //}
+
+        Ext.Loader.setPath('Ext.ux', '@Url.Content("~/Scripts/ext-4.2.1-gpl/ux")');
+        Ext.require([
+            'Ext.ux.grid.FiltersFeature'
+        ]);
+
+        Ext.onReady(function () {
+        var projectStore = Ext.create('widget.projectStore', {
+            pageSize: 9999
+            //,remoteSort: true
+        });
+
+        var store1 = Ext.create('Ext.data.JsonStore', {
+            fields: ['name', 'value']
+        });
+
+        var store2 = Ext.create('Ext.data.JsonStore', {
+            fields: ['name', 'value']
+        });
+
+        var getEffortGroupByProjectRole = function (projectID) {
+            Ext.getCmp('projectPortfolioPanel').setLoading(true);
+            Ext.Ajax.request({
+                url: paramsView.urlGetEffortGroupByProjectRole + '?projectID=' + projectID,    // where you wanna post
+                success: function (transport) {
+                    Ext.getCmp('projectPortfolioPanel').setLoading(false);
+                    var response = Ext.decode(transport.responseText);
+                    //console.log(response);
+                    var data = [];
+                    if (response.success) {
+                        var results = response.data;
+                        for (var i = 0; i < results.length; i++) {
+                            var d = results[i];
+                            data.push({
+                                label: results[i].Key,
+                                value: results[i].Value,
+                            });
+                        }
+                    }
+
+                    drawPieChart("#chart1", data);
+                    //store1.loadData(data);
+
+
+                },   // function called on success
+                failure: function (transport) {
+                    Ext.getCmp('projectPortfolioPanel').setLoading(false);
+
+                    Ext.MessageBox.show({
+                        title: messagesForm.errorAlertTitle,
+                        msg: 'เกิดข้อผิดพลาดในการ GetCostGroupByProjectRole',
+                        //width: 300,
+                        buttons: Ext.MessageBox.OK,
+                        icon: Ext.MessageBox.ERROR
+                    });
+                },
+                method: 'GET'// your json data
+            });
+        };
+
+        //var getCostGroupByProjectRole = function (projectID) {
+        //    Ext.getCmp('projectPortfolioPanel').setLoading(true);
+        //    Ext.Ajax.request({
+        //        url: paramsView.urlGetCostGroupByProjectRole + '?projectID=' + projectID,    // where you wanna post
+        //        success: function (transport) {
+        //            Ext.getCmp('projectPortfolioPanel').setLoading(false);
+        //            var response = Ext.decode(transport.responseText);
+        //            //console.log(response);
+        //            var data = [];
+        //            if (response.success) {
+        //                var results = response.data;
+        //                for (var i = 0; i < results.length; i++) {
+        //                    var d = results[i];
+        //                    data.push({
+        //                        label: results[i].Key,
+        //                        value: results[i].Value,
+        //                    });
+        //                }
+
+        //            }
+
+        //            drawPieChart("#chart2", data);
+
+        //            //store2.loadData(data);
+        //        },   // function called on success
+        //        failure: function (transport) {
+        //            Ext.getCmp('projectPortfolioPanel').setLoading(false);
+
+        //            Ext.MessageBox.show({
+        //                title: messagesForm.errorAlertTitle,
+        //                msg: 'เกิดข้อผิดพลาดในการ GetEffortGroupByProjectRole',
+        //                //width: 300,
+        //                buttons: Ext.MessageBox.OK,
+        //                icon: Ext.MessageBox.ERROR
+        //            });
+        //        },
+        //        method: 'GET'// your json data
+        //    });
+        //};
+
+        var panelHeight = WindowHeight.height;
+
+        var filters = {
+            ftype: 'filters',
+            // encode and local configuration options defined previously for easier reuse
+            encode: false, // json encode the filter query
+            local: true,   // defaults to false (remote filtering)
+
+            // Filters are most naturally placed in the column definition, but can also be
+            // added here.
+            filters: [
+                {
+                    type: 'boolean',
+                    dataIndex: 'visible'
+                }
+            ]
+        };
+
+        Ext.create('Ext.tab.Panel', {
+            renderTo: 'projectDashboardPanel',
+            layout: { type: 'border', padding: 1 },
+            height: panelHeight,
+            width: 'auto',
+            //border: 1,
+            frame: true,
+            defaults: {
+                frame: false,
+                split: true
+            },
+            items: [
+                {
+                    xtype: 'gridpanel',
+                    title: 'Projects',
+                    region: 'center',
+                    store: projectStore,
+                    features: [filters],
+                    listeners: {
+                        select: function( grid, record, index, eOpts ){
+                            //console.log(record.get('ID'));
+                            //store1.loadData(generateData(6, 20));
+                            //getEffortGroupByProjectRole(record.get('ID'));
+                            //getCostGroupByProjectRole(record.get('ID'));
+
+                            //Ext.getCmp('chart').expand();
+                        }
+                    },
+                    columns: {
+                        items: [
+                            { text: 'ID', dataIndex: 'ID', hidden: true, sortable: true },
+                            { xtype: 'rownumberer', width: 30, sortable: false, locked: true },
+                            {
+                                xtype: 'actioncolumn',
+                                sortable: false,
+                                menuDisabled: true,
+                                width: 60,
+                                items: [
+                                    {
+                                        xtype: 'button',
+                                        tooltip: 'Cumulative Cost Flow Diagram',
+                                        iconCls: 'chart-line-project-member-icon',
+                                        isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                            var totalCost = record.get('TotalCost');
+                                            if (totalCost > 0) return false;
+                                            return true;
+                                        },
+                                        handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                            grid.getSelectionModel().select(record);
+                                            var chartForm = Ext.create('widget.chartWindow', {
+                                                title: "" + record.get('Code') + " (" + record.get('Name') + ")",
+                                                iconCls: 'chart-line-project-memebr-icon',
+                                                projectData: record,
+                                                animateTarget: row,
+                                                modal: true
+                                            });
+                                            chartForm.show();
+                                        }
+                                    },
+                                    {
+                                        xtype: 'button',
+                                        tooltip: 'Project Activities Bar',
+                                        iconCls: 'chart-bar-project-member-icon',
+                                        isDisabled: function (view, rowIndex, colIndex, item, record) {
+                                            var totalEffort = record.get('TotalEffort');
+                                            if (totalEffort > 0) return false;
+                                            return true;
+                                        },
+                                        handler: function (grid, rowIndex, colIndex, item, event, record, row) {
+                                            grid.getSelectionModel().select(record);
+
+                                            var barChartForm = Ext.create('widget.projectactivitiesbarwindow', {
+                                                title: "" + record.get('Code') + " (" + record.get('Name') + ")",
+                                                iconCls: 'chart-bar-project-member-icon',
+                                                projectData: record,
+                                                animateTarget: row,
+                                                modal: true
+                                            });
+                                            barChartForm.show();
+                                        }
+                                    }
+                                    //,
+                                    //{
+                                    //    xtype: 'button',
+                                    //    tooltip: 'Departments Pie',
+                                    //    iconCls: 'chart-pie-projects-icon'
+                                    //},
+                                    //{
+                                    //    xtype: 'button',
+                                    //    tooltip: 'Organisation Structure',
+                                    //    iconCls: 'chart-organisation-projects-icon'
+                                    //}
+                                ]
+                            },
+                            {
+                                text: 'Code', dataIndex: 'Code', sortable: true, width: 100,
+                                menuDisabled: false,
+                                filter: { type: 'string' }
+                            },
+                            {
+                                text: 'Name', dataIndex: 'Name', sortable: true, flex: 2,
+                                menuDisabled: false,
+                                filter: { type: 'string' },
+                                renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                                    // Sample value: msimms & Co. "like" putting <code> tags around your code
+
+                                    value = Ext.String.htmlEncode(value);
+
+                                    // "double-encode" before adding it as a data-qtip attribute
+                                    metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+
+                                    return value;
+                                }
+                            },
+                            {
+                                text: 'Progress', dataIndex: 'Progress', sortable: true, width: 80, align: 'right',
+                                renderer: function (value, metadata, record, rowIndex, colIndex, store) {
+                                    //metadata.attr = "style='color: #aaa';";
+                                    return value + "%";
+                                }
+                            },
+                            { text: 'Start', dataIndex: 'StartDate', sortable: true, width: 85, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
+                            { text: 'End', dataIndex: 'EndDate', sortable: true, width: 85, renderer: Ext.util.Format.dateRenderer('d/m/Y') },
+                            {
+                                text: 'Total Effort (hrs)', dataIndex: 'TotalEffort', sortable: true, width: 120, align: 'right',
+                                renderer: function (value, metadata, record, rowIndex, colIndex, store) {
+                                    metadata.attr = "style='color: #aaa';";
+                                    return Ext.util.Format.number(value, '0,000.00');
+                                }
+                            },
+                            {
+                                text: 'Total Cost', dataIndex: 'TotalCost', sortable: true, width: 120, align: 'right',
+                                renderer: function (value, metadata, record, rowIndex, colIndex, store) {
+                                    metadata.attr = "style='color: #aaa';";
+                                    return Ext.util.Format.number(value, '0,000.00');
+                                }
+                            },
+                            { text: 'Members', dataIndex: 'Members', sortable: true, width: 90, align: 'right' }
+                        ],
+                        defaults: {
+                            sortable: false,
+                            menuDisabled: true,
+                            renderer: function (value, metaData, record, rowIdx, colIdx, store) {
+                                if (value) {
+                                    value = Ext.String.htmlEncode(value);
+                                    metaData.tdAttr = 'data-qtip="' + Ext.String.htmlEncode(value) + '"';
+                                }
+                                return value;
+                            }
+                        }
+                    },
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: projectStore,
+                        displayInfo: true,
+                        displayMsg: TextLabel.projectLabel + ' ที่กำลังแสดงอยู่ {0} - {1} จาก {2}',
+                        emptyMsg: "ไม่มี " + TextLabel.projectLabel
+                    })
+                },
+                {
+                    xtype: 'panel',
+                    layout: { type: 'border', padding: 1 },
+                    title: 'Departments',
+                    items: [{
+                        xtype: 'panel',
+                        region: 'center',
+                        defaults: {
+                            xtype: 'box',
+                            layout: { type: 'fit', padding: 1 }
+                        },
+                        items: [{
+                            html: '<div id="cost-multi-bar-chart"></div>'
+                        }]
+                    }],
+                    listeners: {
+                        render: function (tabs, newTab, oldTab) {
+                            tabs.setLoading(true);
+                            var url_GetDepartmentTimesheetYears = paramsView.urlGetDepartmentTimesheetYears;
+                            d3.json(url_GetDepartmentTimesheetYears,
+                            function (error, result) {
+                                tabs.setLoading(false);
+                                //console.log(result);
+                                if (error) {
+                                    console.log(error);
+                                } else {
+                                    displayMultiBar(result);
+                                }
+                            }
+                        );
+                        }
+                    }
+                },
+                {
+                    xtype: 'panel',
+                    layout: { type: 'border', padding: 1 },
+                    title: 'Productivity',
+                    items: [{
+                        xtype: 'panel',
+                        region: 'center',
+                        defaults: {
+                            xtype: 'box',
+                            layout: { type: 'fit', padding: 1 }
+                        },
+                        items: [{
+
+                            html: '<div id="effort-stacked-chart"></div>'
+                        }]
+                    }],
+                    listeners: {
+                        render: function (tabs, newTab, oldTab) {
+                            tabs.setLoading(true);
+                            var url_GetTimesheetYears = paramsView.urlGetTimesheetYears;
+                            d3.json(url_GetTimesheetYears,
+                        function (error, results) {
+                            tabs.setLoading(false);
+                            if (error) {
+                                console.log(error);
+                            } else {
+                                var data = [];
+                                results.forEach(function (d) {
+                                    data.push({
+                                        year: d.Year,
+                                        nonRecord: d.NonRecordEfforts,
+                                        nonProject: d.NonProjectEfforts,
+                                        project: d.ProjectEfforts
+                                    });
+                                });
+
+                                displayStackedBar(data);
+                            }
+                        }
+                    );
+                        }
+                    }
+                }
+            ]
+        });
+
+        projectStore.load({ url: paramsView.urlReadProject });
+
+        //var data = [
+        //        { year: 2014, nonRecord: 260, nonProject: 150, project: 230 },
+        //        { year: 2015, nonRecord: 260, nonProject: 150, project: 230 }
+        //];
+
+        function displayStackedBar(data) {
+            var margin = { top: 60, right: 60, bottom: 30, left: 70 },
+            width = 1000 - margin.left - margin.right,
+            height = panelHeight - 100 - margin.top - margin.bottom;
+
+            var svg = d3.select("#effort-stacked-chart")
+                        .append("svg")
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var x = d3.scale.ordinal()
+                .rangeRoundBands([0, width], .1);
+
+            var y = d3.scale.linear()
+                .rangeRound([height, 0]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left");
+            yAxis.innerTickSize(-width);
+
+            var timesheets = ["project", "nonProject"];
+            var color = d3.scale.category10().domain(timesheets);
+
+            data.forEach(function (d) {
+                var y0 = 0;
+                d.mapping = timesheets.map(function (name) {
+                    return {
+                        name: name,
+                        label: d["year"],
+                        y0: y0,
+                        y1: y0 += +d[name]
+                    };
+                });
+                d.total = d.mapping[d.mapping.length - 1].y1;
+            });
+
+            x.domain(data.map(function (d) { return d.year; }));
+            y.domain([0, d3.max(data, function (d) { return d.total; })]);
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+              .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("Effort (hrs)");
+
+            var selection = svg.selectAll(".series").data(data);
+
+            selection.enter().append("g")
+                .attr("class", "series")
+                .attr("transform", function (d) { return "translate(" + x(d.year) + ",0)"; });
+
+            var rects = selection.selectAll("rect")
+              .data(function (d) { return d.mapping; });
+
+            rects.enter().append("rect")
+              .attr("width", x.rangeBand())
+              .attr("y", function (d) { return y(d.y1); })
+              .attr("height", function (d) { return y(d.y0) - y(d.y1); })
+              .style("fill", function (d) { return color(d.name); })
+              .style("stroke", "grey");
+
+            var legend = svg.selectAll(".legend")
+                .data(timesheets.slice().reverse())
+              .enter().append("g")
+                .attr("class", "legend")
+                .attr("transform", function (d, i) { return "translate(55," + i * 20 + ")"; });
+            legend.append("rect")
+                .attr("x", width - 10)
+                .attr("width", 10)
+                .attr("height", 10)
+                .style("fill", color)
+                .style("stroke", "grey");
+            legend.append("text")
+                .attr("x", width - 12)
+                .attr("y", 6)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text(function (d) { return d; });
+
+            var formatter = d3.format(",");
+            var tip = d3.tip()
+              .attr('class', 'd3-tip')
+              .offset([-10, 0])
+              .html(function (d) {
+                  //console.log(d);
+                  var data = Math.abs(d.y0 - d.y1);
+                  var msg = "<strong>Effort (hrs):</strong> <span style='color:red'>" + formatter(data) + "</span>";
+                  return msg;
+              });
+            svg.call(tip);
+            //console.log(tip);
+            rects.on("mouseover", tip.show)
+                .on("mouseout", tip.hide);
+        }
+        function displayMultiBar(result) {
+            var margin = { top: 60, right: 20, bottom: 30, left: 70 },
+            width = 1000 - margin.left - margin.right,
+            height = panelHeight - 100 - margin.top - margin.bottom;
+
+            var x0 = d3.scale.ordinal().rangeRoundBands([0, width], .1);
+            var x1 = d3.scale.ordinal();
+            var y = d3.scale.linear().range([height, 0]);
+
+            var svg = d3.select("#cost-multi-bar-chart")
+                        .append("svg")
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var results = result.data;
+            var years = result.years;
+            var departments = result.departments;
+
+            var color = d3.scale.category20().domain(departments);
+
+            var xAxis = d3.svg.axis()
+                            .scale(x0)
+                            .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                        .scale(y)
+                        .orient("left");
+            //.tickFormat(d3.format(".2s"));
+            yAxis.innerTickSize(-width);
+
+            var data = [];
+            results.forEach(function (d) {
+                var dept = { year: d.Year, departments: [] };
+                for (var i = 0; i < departments.length; i++) {
+                    dept.departments.push({
+                        name: departments[i],
+                        value: d.Costs[i]
+                    });
+                }
+                data.push(dept);
+            });
+
+            //console.log(data);
+            var max = d3.max(results, function(d){ return d3.max(d.Costs); } );
+            x0.domain(years);
+            x1.domain(departments).rangeRoundBands([0, x0.rangeBand()]);
+            y.domain([0, max]);
+
+            svg.append("g")
+              .attr("class", "x axis")
+              .attr("transform", "translate(0," + height + ")")
+              .call(xAxis);
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+              .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("Cost");
+
+            var state = svg.selectAll(".state").data(data);
+            state.enter().append("g")
+                .attr("class", "g")
+                .attr("transform", function (d) { return "translate(" + x0(d.year) + ",0)"; });
+
+            var bars = state.selectAll("rect").data(function (d) { return d.departments; });
+
+            bars.enter().append("rect")
+                .attr("width", x1.rangeBand())
+                .attr("x", function (d) { return x1(d.name); })
+                .attr("y", function (d) { return y(d.value); })
+                .style("fill", function (d) { return color(d.name); })
+                .attr("height", function (d) { return height - y(d.value); });
+
+            var legend = svg.selectAll(".legend")
+                .data(departments.slice().reverse())
+              .enter().append("g")
+                .attr("class", "legend")
+                .attr("transform", function (d, i) { return "translate(0," + i * 14 + ")"; });
+
+            legend.append("rect")
+                .attr("x", width - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", color);
+
+            legend.append("text")
+                .attr("x", width - 24)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text(function (d) { return d; });
+
+            var formatter = d3.format(",");
+            var tip = d3.tip()
+              .attr('class', 'd3-tip')
+              .offset([-10, 0])
+              .html(function (d) {
+                  //console.log(d);
+                  var msg = "<strong>Department:</strong> <span style='color:red'>" + d.name + "</span>";
+                  msg += "<br><strong>Cost:</strong> <span style='color:red'>" + formatter(d.value) + "</span>";
+                  return msg;
+              });
+            svg.call(tip);
+            //console.log(tip);
+            bars.on("mouseover", tip.show)
+                .on("mouseout", tip.hide);
+        }
+    });
+    </script>
+}

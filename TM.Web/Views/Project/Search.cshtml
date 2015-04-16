@@ -62,33 +62,42 @@
 @section scripts{
     @Scripts.Render("~/bundles/d3")
     <script>
-    paramsView.urlReadProject = '@Url.Content("~/Project/FindProject")';
-    paramsView.urlReadDepartment = '@Url.Content("~/Project/GetDepartment")';
-    paramsView.urlReadDivision = '@Url.Content("~/Project/GetDivision")';
-    paramsView.urlReadEmployee = '@Url.Content("~/Project/FindEmployee")';
-    paramsView.urlReadProjectMember = '@Url.Content("~/Project/FindProjectMember")';
-    paramsView.urlReadProjectRole = '@Url.Content("~/Project/GetProjectRole")';
-    paramsView.urlSaveProjectRole = '@Url.Content("~/Project/SaveMemberProjectRole")';
-    paramsView.urlAssignProjectMember = '@Url.Content("~/Project/AssignProjectMember")';
-    paramsView.urlRemoveProjectMember = '@Url.Content("~/Project/RemoveProjectMember")';
-    paramsView.userDivisionID = '@ViewBag.UserDivisionID';
-    paramsView.userDepartmentID = '@ViewBag.UserDepartmentID';
-    paramsView.urlGetCumulativeEffortByWeek = '@Url.Content("~/Project/GetCumulativeEffortByWeek")';
-    paramsView.urlGetProjectStatus = '@Url.Content("~/Project/GetProjectStatus")';
-    paramsView.urlCheckDuplicatedProjectCode = '@Url.Content("~/Project/CheckDuplicatedProjectCode")';
-    paramsView.urlSaveProject = '@Url.Content("~/Project/SaveProject")';
-    paramsView.urlGetAllInitialMember = '@Url.Content("~/Project/GetAllInitialMember")';
-    paramsView.urlProjectApi = '@Url.Content("~/Project/")';
-    paramsView.urlGetCustomer = '@Url.Content("~/Project/GetAllCustomer")';
+        paramsView.urlReadProject = '@Url.Content("~/Project/FindProject")';
+        paramsView.urlReadDepartment = '@Url.Content("~/Project/GetDepartment")';
+        paramsView.urlReadDivision = '@Url.Content("~/Project/GetDivision")';
+        paramsView.urlReadEmployee = '@Url.Content("~/Project/FindEmployee")';
+        paramsView.urlReadProjectMember = '@Url.Content("~/Project/FindProjectMember")';
+        paramsView.urlReadProjectRole = '@Url.Content("~/Project/GetProjectRole")';
+        paramsView.urlSaveMemberProjectRole = '@Url.Content("~/Project/SaveMemberProjectRole")';
+        paramsView.urlAssignProjectMember = '@Url.Content("~/Project/AssignProjectMember")';
+        paramsView.urlRemoveProjectMember = '@Url.Content("~/Project/RemoveProjectMember")';
+        paramsView.userDivisionID = '@ViewBag.UserDivisionID';
+        paramsView.userDepartmentID = '@ViewBag.UserDepartmentID';
+        paramsView.urlGetCumulativeEffortByWeek = '@Url.Content("~/Project/GetCumulativeEffortByWeek")';
+        paramsView.urlGetProjectStatus = '@Url.Content("~/Project/GetProjectStatus")';
+        paramsView.urlCheckDuplicatedProjectCode = '@Url.Content("~/Project/CheckDuplicatedProjectCode")';
+        paramsView.urlSaveProject = '@Url.Content("~/Project/SaveProject")';
+        paramsView.urlGetAllInitialMember = '@Url.Content("~/Project/GetAllInitialMember")';
+        paramsView.urlProjectApi = '@Url.Content("~/Project/")';
+        paramsView.urlGetCustomer = '@Url.Content("~/Project/GetAllCustomer")';
 
-    paramsView.urlGetCumulativeEffortByDate = '@Url.Content("~/Organization/GetCumulativeCostByDate")';
-    paramsView.urlGetEffortTimesheetItem = '@Url.Content("~/Organization/GetEffortTimesheetItem")';
+        paramsView.urlGetCumulativeEffortByDate = '@Url.Content("~/ProjectPortfolio/GetCumulativeCostByDate")';
 
-    @if(@Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager)){
+        paramsView.urlGetEffortTimesheetItem = '@Url.Content("~/ProjectPortfolio/GetEffortTimesheetItem")';
+
+        paramsView.urlGetProjectDeliveryPhases = '@Url.Content("~/Project/GetProjectDeliveryPhases")';
+        paramsView.urlSaveProjectDeliveryPhase = '@Url.Content("~/Project/SaveProjectDeliveryPhase")';
+        paramsView.urlDeleteProjectDeliveryPhase = '@Url.Content("~/Project/DeleteProjectDeliveryPhase")';
+
+        paramsView.urlAcceptedProject = '@Url.Content("~/Project/AcceptedProject")';
+        paramsView.urlUnacceptedProject = '@Url.Content("~/Project/UnacceptedProject")';
+
+        @if(@Roles.IsUserInRole(PJ_CWN019.TM.Web.Models.Providers.ConstAppRoles.Manager)){
         <text>
-    paramsView.isManagerRole = true;
-    </text>
+        paramsView.isManagerRole = true;
+        </text>
         }
     </script>
+
     <script src="@Url.Content("~/app/onReady/Project/Search.js")"></script>
 }

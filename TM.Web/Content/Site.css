@@ -1,0 +1,295 @@
+﻿
+.x-body {
+    font-family: arial;
+    font-size: 14px;
+    /*background: #FFFFFF;*/
+}
+
+#header {
+    width: 100%;
+    height: 86px;
+    overflow: hidden;
+    margin: 0px auto 0px auto;
+    padding-top: 0px;
+    top: 0px;
+}
+
+#header .topr .logoleft {
+    float: left;
+    padding: 6px 0px 6px 20px;
+    font-family: arial;
+    font-size: 16px;
+    color: #0079C2;
+}
+
+.logoright {
+    position:absolute;
+    top: 10px;
+    right:10px;
+    font-size: small;
+}
+
+#logOffForm {
+    float: right;
+    padding: 0;
+    text-align: center;
+    vertical-align: text-top;
+}
+
+#footer {
+    clear: both;
+    width: 99%;
+    padding: 0px 0px 0px 0px;
+    vertical-align: top;
+    margin: 10px;
+    border-top: 1px solid #CCCCCC;
+}
+
+#footer .bar {
+	padding: 0px 0px 0px 0px;
+}
+
+#footer .bar .left {
+    float: left;
+    padding: 0px 0 0px 0px;
+    vertical-align: top;
+    font-size: 8pt;
+}
+
+#footer .bar .right {
+    text-align: right;
+    padding: 0px 0px 0px 0px;
+    float: right;
+    vertical-align: top;
+    font-size: 8pt;
+}
+
+.required {
+        color: #D9534F;
+        font-size: 18px;
+        font-weight: bold;
+}
+
+.edit-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/application_form_edit.png");
+    margin: 0 0 0 5px;
+}
+
+.project-memebr-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/user.png");
+    margin: 0 0 0 5px;
+}
+
+.add-project-memebr-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/user_add.png");
+    margin: 0 0 0 5px;
+}
+
+.edit-project-memebr-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/user_edit.png");
+    margin: 0 0 0 5px;
+}
+
+.edit-project-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/page_edit.png");
+    margin: 0 0 0 5px;
+}
+
+.chart-line-project-member-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/chart_line.png");
+    margin: 0 0 0 5px;
+}
+
+.chart-bar-project-member-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/chart_bar.png");
+    margin: 0 0 0 5px;
+}
+
+.chart-bar-project-member-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/chart_bar.png");
+    margin: 0 0 0 5px;
+}
+
+.chart-pie-projects-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/chart_pie.png");
+    margin: 0 0 0 5px;
+}
+
+.chart-organisation-projects-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/chart_organisation.png");
+    margin: 0 0 0 5px;
+}
+
+.edit-timesheet-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/page_edit.png");
+    margin: 0 0 0 5px;
+}
+
+.reset-password-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/lock_edit.png");
+}
+
+.edit-employee-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/user_edit.png");
+}
+
+.delete-employee-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/user_delete.png");
+}
+
+.accept-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/accept.png");
+}
+
+.cancel-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/cancel.png");
+}
+
+.cellediting {
+    background-color: lightblue !important;
+}
+
+.cellreadonly {
+    background-color: lightskyblue !important;
+}
+
+.x-column-header {
+    background-color: #1896F1;
+    color: #FDFDFD;
+}
+
+.x-column-header-over {
+    background-color: #D7EBFA;
+    color: #0C0C0C;
+}
+
+.cmb-project-field {
+    font-size: 9px;
+}
+
+.col-lg-12{
+    margin-bottom: 3px !important;
+}
+.container{
+	width: 1150px;
+}
+
+.page-header{
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+}
+
+.navbar-default .navbar-nav > li > a {
+    color: #F5F5F5;
+}
+.navbar-default {
+    background-color: #157fcc !important;
+    border-color: #157fcc !important;
+}
+.navbar {
+    margin-bottom: 3px !important;
+}
+
+.combobox-numerico {
+    text-align: right;    
+}
+
+.searchMatch {
+    /*font-style: italic;
+    font-weight: bold;*/
+    text-decoration:underline;
+}
+
+.delete-icon {
+    background-repeat:no-repeat;
+    background-image: url("../Content/Images/famfamfam_silk_icons_v013/Icons/delete.png");
+    margin: 0 0 0 5px;
+}
+
+/* add this in own common css */
+.a-form-num-field
+{
+    text-align: right;
+    color: black;
+    font: 12px tahoma,arial,verdana,sans-serif;
+    margin: 0;
+}
+
+/* d3 chart */
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+
+.x.axis text {
+    font: 11px sans-serif;
+}
+
+.y.axis text {
+    font: 11px sans-serif;
+}
+.tick line{
+    opacity: 0.2;
+}
+
+.legend text {
+    font: 11px sans-serif;
+    }
+
+.a-form-num-field
+{
+    text-align: right;
+    color: black;
+    font: 12px tahoma,arial,verdana,sans-serif;
+    margin: 0;
+}
+/*svg text.x-hide-visibility {visibility: inherit!important;}*/
+
+    .d3-tip {
+      line-height: 1;
+      font-weight: bold;
+      font: 12px sans-serif;
+      padding: 9px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      border-radius: 2px;
+    }
+
+    /* Creates a small triangle extender for the tooltip */
+    .d3-tip:after {
+      box-sizing: border-box;
+      display: inline;
+      font-size: 10px;
+      width: 100%;
+      line-height: 1;
+      color: rgba(0, 0, 0, 0.8);
+      content: "\25BC";
+      position: absolute;
+      text-align: center;
+    }
+
+    /* Style northward tooltips differently */
+    .d3-tip.n:after {
+      margin: -1px 0 0 0;
+      top: 100%;
+      left: 0;
+    }

@@ -55,7 +55,7 @@ namespace PJ_CWN019.TM.Web.Controllers
             return View();
         }
 
-        string dateFormat = "dd/MM/yyyy";
+        string dateFormat = ConstPage.FormatDefault;
         public ActionResult Timesheet()
         {
             ViewBag.MaxDate = DateTime.Now.ToString(dateFormat, new CultureInfo("en-US"));
@@ -283,6 +283,49 @@ namespace PJ_CWN019.TM.Web.Controllers
             return Json(result, JsonRequestBehavior.AllowGet);
         }
 
+        private void calculateProjectAccountBalance(long projectID, DateTime startDate)
+        {
+            try
+            {
+                using (var session = _sessionFactory.OpenSession())
+                using (var transaction = session.BeginTransaction())
+                {
+                    var project = (from p in session.Query<Project>()
+                                   where p.ID == projectID
+                                   select p).Single();
+
+                    var timesheets = (from t in session.Query<Timesheet>()
+                                      where t.Project == project
+                                      && t.ActualStartDate.Value.Date == startDate.Date
+                                      select t).ToList();
+
+                    var prjCostAcc = (from p in session.Query<ProjectCostAccount>()
+                                      where p.Project == project
+                                      select p).SingleOrDefault();
+
+                    var totalMembers = (from x in session.Query<Timesheet>()
+                                        where x.Project == project
+                                            && x.ActualStartDate.Value.Date <= startDate.Date
+                                        select x.User).Distinct().Count();
+
+                    if (prjCostAcc == null)
+                    {
+                        prjCostAcc = new ProjectCostAccount(project);
+                        session.Save(prjCostAcc);
+                    }
+
+                    prjCostAcc.UpdateEntry(timesheets, startDate, totalMembers);
+                    prjCostAcc.UpdateBalance();
+
+                    transaction.Commit();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("calculateProjectAccountBalance", ex);
+            }
+        }
+
         [HttpPost]
         public JsonResult AddTimesheet(TimesheetView timesheetView)
         {
@@ -340,8 +383,9 @@ namespace PJ_CWN019.TM.Web.Controllers
                 //project.TimeSheets.Add(newTimesheet);
                 
                 session.Save(newTimesheet);
-
                 transaction.Commit();
+
+                calculateProjectAccountBalance(project.ID, startDate);
 
                 msg = "บันทึก Timesheet เสร็จสมบูรณ์";
                 success = true;
@@ -403,6 +447,8 @@ namespace PJ_CWN019.TM.Web.Controllers
 
                 msg = "บันทึก Timesheet เสร็จสมบูรณ์";
                 success = true;
+
+                calculateProjectAccountBalance(oldTimesheetView.Project.ID, startDate);
             }
             //What is important is to return the data as JSON.
             return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);
@@ -414,6 +460,9 @@ namespace PJ_CWN019.TM.Web.Controllers
             var success = false;
             var msg = string.Empty;
 
+            Dictionary<string, Tuple<long, DateTime>> listOfProjectID =
+                new Dictionary<string, Tuple<long, DateTime>>();
+
             using (var session = _sessionFactory.OpenSession())
             using (var transaction = session.BeginTransaction())
             {
@@ -424,11 +473,30 @@ namespace PJ_CWN019.TM.Web.Controllers
                                      select t).Single();
 
                     session.Delete(timesheet);
+
+                    var tuple = new Tuple<long, DateTime>
+                    {
+                        First = timesheet.Project.ID,
+                        Second = timesheet.ActualStartDate.Value.Date
+                    };
+
+                    string key = string.Format("{0}-{1}", tuple.First, tuple.Second);
+                    if (!listOfProjectID.ContainsKey(key))
+                    {
+                        listOfProjectID.Add(key, tuple);
+                    }
                 }
+
                 transaction.Commit();
 
                 msg = "ลบ Timesheet เสร็จสมบูรณ์";
                 success = true;
+
+            }
+
+            foreach (var item in listOfProjectID)
+            {
+                calculateProjectAccountBalance(item.Value.First, item.Value.Second);
             }
 
             return Json(new { success = success, message = msg }, JsonRequestBehavior.AllowGet);

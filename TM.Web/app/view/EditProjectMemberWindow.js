@@ -213,7 +213,7 @@
 
                                                     Ext.MessageBox.wait("กำลังบันทึกข้อมูล...", 'กรุณารอ');
                                                     Ext.Ajax.request({
-                                                        url: paramsView.urlSaveProjectRole,    // where you wanna post
+                                                        url: paramsView.urlSaveMemberProjectRole,    // where you wanna post
                                                         success: function (transport) {
                                                             Ext.MessageBox.hide();
                                                             //Ext.MessageBox.alert('Success',
